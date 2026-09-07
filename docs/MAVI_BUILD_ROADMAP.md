@@ -171,16 +171,17 @@ Architecture:
 - Logout
 - Dashboard placeholder
 
-#### Business frontend — NOT STARTED
+#### F.1 App shell, API foundation & foundations — COMPLETE
 
-- App shell/navigation
-- Real dashboard
-- Groups UI
-- Expenses UI
-- Splitting UI
-- Balances UI
-- Settlements UI
-- Notifications UI
+- Application shell: responsive sidebar navigation (desktop) / drawer + top bar (mobile), brand, active-route state, current-user chip, logout, unread-notifications badge in the nav (60s polling), Next step = F.2 onward
+- Central Axios config (`src/services/api.ts`): JWT bearer attach, 401 → clears token + notifies the auth context (session torn down, ProtectedRoute redirects to /login), `getErrorMessage` normalization; feature API services (`src/features/*/api/*Api.ts`) keep components free of request logic
+- Routing (React Router): `/dashboard`, `/groups`, `/groups/:groupId`, `/notifications` under a protected, unread-aware `AppLayout`; `/login`, `/register` guest routes preserved; unknown paths → `/dashboard`
+- Dashboard (`GET /api/dashboard`): summary cards (overall net, paid, owe, to-receive, to-pay, personal spending), groups overview (net/outstanding/role/members), recent group expenses, recent personal expenses, recent settlements; loading/error/empty states; no invented fields
+- Groups foundation: list cards (name, description, member count, role), create-group form (client validation mirrors backend), detail page with archive banner + role badges; Overview tab (group balances summary: total expense, outstanding, my paid/owed/net) and Members tab (name, email, role, status, joined) fully backed by APIs; Expenses/Balances/Settlements/Activity tabs exist as structured placeholders (F.4/F.5/F.6/F.7)
+- Notifications foundation: feed (`GET /api/notifications`) with All/Unread filters, per-type descriptions from metadata, mark-one-read + mark-all-read (`PATCH`), paginated "Load more"; unread badge (`GET /api/notifications/unread-count`) in the shell
+- Money display: integer minor units from the backend are formatted for display with integer math only (`src/lib/money.ts`); no frontend financial calculations
+- Verification: `npm run build` clean; `npx oxlint` clean (no errors); live temp contract check 25/25 against the running backend covering auth/me, dashboard (empty + post-expense numbers), groups list/create/detail/members, balances, notifications list/unread-count/mark-read/read-all with cleanup; backend self-tests unchanged (splitting 65/65, balances 89/89, settlements 50/50, notifications 36/36); Vite dev server serves HTTP 200
+- Not committed yet — working tree left uncommitted for review
 
 ### Finalization
 
@@ -391,7 +392,7 @@ notifications/
 
 **Frontend:**
 
-- F.1 App shell/navigation
+- F.1 App shell/navigation — DONE
 - F.2 Real dashboard
 - F.3 Groups
 - F.4 Expenses + splitting interface
@@ -454,13 +455,12 @@ When returning to the project after hours/days:
 
 ## CURRENT NEXT STEP
 
-### H.8 — Notifications (COMPLETE)
+### F.1 — Frontend app shell & foundations (COMPLETE)
 
-The Notifications backend module is implemented and verified: lightweight records
-(recipient/type/group/actor/metadata/readAt/timestamps) generated from group activity
-(expense created, invitation, member accepted, member removed/left, role change,
-ownership transfer, group archived, settlement recorded), with list/unread-count/
-mark-read/read-all APIs. H.8 production smoke passed against MongoDB Atlas.
+The authenticated application shell, central API/Auth foundation, real dashboard,
+groups foundation (list/create/detail/members/overview), group-detail tab
+structure, and the notifications feed + unread badge are implemented and verified
+against the live backend. The F.1 working tree is uncommitted, pending review.
 
-**Next major step: F.1 — Frontend app shell/navigation** (authentication pages exist;
-the business UI, including the notifications feed UI, is not started).
+**Next major step: F.2 — Real dashboard polish** (extend the dashboard with deeper
+drill-downs now that the shell and data layer exist).

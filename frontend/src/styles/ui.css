@@ -1,0 +1,464 @@
+/* Shared MAVI UI primitives. Feature-specific styles live next to each feature.
+
+   Uses the design tokens from index.css (--accent, --border, --bg, --text,
+   --text-h, --shadow, --danger, --success). */
+
+/* ---------- App page scaffold ---------- */
+
+.app-page {
+  width: 100%;
+  max-width: 1024px;
+  margin: 0 auto;
+  padding: 28px 20px 48px;
+  box-sizing: border-box;
+}
+
+.page-header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-bottom: 24px;
+}
+
+.page-title {
+  font-size: 28px;
+  letter-spacing: -0.5px;
+  margin: 0;
+}
+
+.page-subtitle {
+  font-size: 15px;
+  color: var(--text);
+  margin: 4px 0 0;
+}
+
+.page-header__actions {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+/* ---------- Cards ---------- */
+
+.card {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  box-shadow: var(--shadow);
+  padding: 20px;
+  box-sizing: border-box;
+}
+
+.card + .card {
+  margin-top: 16px;
+}
+
+.card__title {
+  font-size: 16px;
+  letter-spacing: 0.01em;
+  margin: 0 0 16px;
+  color: var(--text-h);
+}
+
+.section {
+  margin-top: 28px;
+}
+
+.section__title {
+  font-size: 18px;
+  letter-spacing: -0.2px;
+  margin: 0 0 12px;
+  color: var(--text-h);
+}
+
+.card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 16px;
+}
+
+/* ---------- Buttons ---------- */
+
+.btn {
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1;
+  padding: 10px 16px;
+  border-radius: 8px;
+  border: 1px solid transparent;
+  background: var(--accent);
+  color: #fff;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  text-decoration: none;
+  transition:
+    opacity 0.15s ease,
+    box-shadow 0.15s ease,
+    border-color 0.15s ease,
+    background 0.15s ease;
+}
+
+.btn:hover:not(:disabled) {
+  opacity: 0.9;
+}
+
+.btn:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px var(--accent-bg);
+}
+
+.btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.btn--secondary {
+  background: transparent;
+  color: var(--text-h);
+  border-color: var(--border);
+}
+
+.btn--secondary:focus-visible {
+  box-shadow: 0 0 0 3px var(--accent-bg);
+}
+
+.btn--ghost {
+  background: transparent;
+  color: var(--accent);
+}
+
+.btn--ghost:focus-visible {
+  box-shadow: 0 0 0 3px var(--accent-bg);
+}
+
+.btn--danger {
+  background: transparent;
+  color: var(--danger);
+  border-color: var(--danger);
+}
+
+.btn--sm {
+  padding: 7px 12px;
+  font-size: 13px;
+}
+
+.btn--link {
+  background: transparent;
+  color: var(--accent);
+  padding: 4px;
+}
+
+.btn--link:hover:not(:disabled) {
+  text-decoration: underline;
+}
+
+/* ---------- Forms ---------- */
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.field label {
+  font-size: 14px;
+  font-weight: 550;
+  color: var(--text-h);
+}
+
+.field input,
+.field textarea,
+.field select {
+  font-family: inherit;
+  font-size: 15px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--text-h);
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+.field input::placeholder,
+.field textarea::placeholder {
+  color: var(--text);
+  opacity: 0.7;
+}
+
+.field input:focus-visible,
+.field textarea:focus-visible,
+.field select:focus-visible {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-bg);
+}
+
+.field textarea {
+  resize: vertical;
+  min-height: 84px;
+}
+
+.field--invalid input,
+.field--invalid textarea {
+  border-color: var(--danger);
+}
+
+.field--invalid input:focus-visible,
+.field--invalid textarea:focus-visible {
+  box-shadow: 0 0 0 3px var(--danger-bg);
+}
+
+.field__error {
+  font-size: 13px;
+  color: var(--danger);
+}
+
+.form { display: flex; flex-direction: column; gap: 14px; }
+
+.form__actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 4px;
+}
+
+/* ---------- Feedback ---------- */
+
+.banner {
+  padding: 10px 14px;
+  border-radius: 8px;
+  font-size: 14px;
+  margin-top: 0;
+}
+
+.banner--error {
+  color: var(--danger);
+  background: var(--danger-bg);
+  border: 1px solid var(--danger-border);
+}
+
+.banner--success {
+  color: var(--success);
+  background: var(--success-bg);
+  border: 1px solid var(--success-border);
+}
+
+/* ---------- States ---------- */
+
+.spinner {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 24px 0;
+  color: var(--text);
+  font-size: 14px;
+}
+
+.spinner__dot {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 3px solid var(--accent-bg);
+  border-top-color: var(--accent);
+  animation: mavi-spin 0.8s linear infinite;
+}
+
+@keyframes mavi-spin {
+  to { transform: rotate(360deg); }
+}
+
+.empty-state,
+.error-state {
+  padding: 28px 20px;
+  text-align: center;
+  border: 1px dashed var(--border);
+  border-radius: 14px;
+  background: var(--bg);
+}
+
+.empty-state__title,
+.error-state__message {
+  font-size: 16px;
+  color: var(--text-h);
+  margin: 0 0 8px;
+}
+
+.empty-state__description {
+  font-size: 14px;
+  color: var(--text);
+  margin: 0 0 16px;
+}
+
+.error-state__message {
+  color: var(--danger);
+  margin-bottom: 16px;
+}
+
+.empty-state__action {
+  display: flex;
+  justify-content: center;
+}
+
+/* ---------- Summary / money ---------- */
+
+.summary-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  gap: 14px;
+}
+
+.summary-card {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 14px 16px;
+}
+
+.summary-card__label {
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--text);
+  margin: 0 0 6px;
+}
+
+.summary-card__value {
+  font-size: 20px;
+  font-weight: 650;
+  letter-spacing: -0.3px;
+  color: var(--text-h);
+}
+
+.money--negative { color: var(--danger); }
+.money--positive { color: var(--success); }
+
+/* ---------- Badges ---------- */
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1;
+  padding: 5px 9px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  color: var(--text-h);
+  background: var(--bg);
+  text-transform: capitalize;
+}
+
+.badge--accent { color: var(--accent); border-color: var(--accent-border); background: var(--accent-bg); }
+.badge--success { color: var(--success); border-color: var(--success-border); background: var(--success-bg); }
+.badge--muted { color: var(--text); background: transparent; }
+
+/* ---------- Lists & rows ---------- */
+
+.rows {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  overflow: hidden;
+  background: var(--bg);
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 14px 16px;
+}
+
+.row + .row {
+  border-top: 1px solid var(--border);
+}
+
+.row__primary {
+  font-size: 15px;
+  color: var(--text-h);
+  font-weight: 550;
+  margin: 0;
+}
+
+.row__secondary {
+  font-size: 13px;
+  color: var(--text);
+  margin: 2px 0 0;
+}
+
+.row__meta {
+  font-size: 13px;
+  color: var(--text);
+  text-align: right;
+  margin: 0;
+  white-space: nowrap;
+}
+
+/* ---------- Tabs ---------- */
+
+.tabs {
+  display: flex;
+  gap: 4px;
+  overflow-x: auto;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 20px;
+}
+
+.tab {
+  appearance: none;
+  border: none;
+  background: transparent;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+  padding: 10px 14px;
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+  white-space: nowrap;
+}
+
+.tab:hover {
+  color: var(--text-h);
+}
+
+.tab:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px var(--accent-bg) inset;
+}
+
+.tab--active {
+  color: var(--accent);
+  border-bottom-color: var(--accent);
+}
+
+/* ---------- Link cards ---------- */
+
+.link-card {
+  text-decoration: none;
+  color: inherit;
+  display: block;
+}
+
+.link-card .card {
+  transition:
+    border-color 0.15s ease,
+    transform 0.15s ease;
+}
+
+.link-card:hover .card,
+.link-card:focus-visible .card {
+  border-color: var(--accent-border);
+  transform: translateY(-1px);
+}

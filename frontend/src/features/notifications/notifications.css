@@ -1,0 +1,21 @@
+.notification {
+  align-items: flex-start;
+}
+
+.notification--unread {
+  background: var(--accent-bg);
+}
+
+.notification--unread .row__primary {
+  font-weight: 700;
+}
+
+.notifications-banner {
+  margin-bottom: 16px;
+}
+
+.notifications-more {
+  display: flex;
+  justify-content: center;
+  padding-top: 16px;
+}

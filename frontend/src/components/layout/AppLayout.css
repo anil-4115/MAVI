@@ -1,0 +1,224 @@
+/* Application shell: sidebar navigation on desktop, drawer + top bar on mobile. */
+
+.app-shell {
+  min-height: 100svh;
+  display: flex;
+}
+
+.app-sidebar {
+  width: 232px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  padding: 20px 16px;
+  box-sizing: border-box;
+  border-right: 1px solid var(--border);
+  background: var(--bg);
+  position: sticky;
+  top: 0;
+  height: 100svh;
+}
+
+.app-brand {
+  font-size: 22px;
+  font-weight: 750;
+  letter-spacing: -0.5px;
+  color: var(--accent);
+  text-decoration: none;
+  margin: 4px 8px 20px;
+}
+
+.app-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+}
+
+.app-nav__link {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  color: var(--text);
+  text-decoration: none;
+  font-size: 15px;
+  font-weight: 550;
+  transition:
+    background 0.15s ease,
+    color 0.15s ease;
+}
+
+.app-nav__link:hover {
+  background: var(--accent-bg);
+  color: var(--text-h);
+}
+
+.app-nav__link--active {
+  background: var(--accent-bg);
+  color: var(--accent);
+}
+
+.app-nav__link:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px var(--accent-bg);
+}
+
+.app-nav__badge {
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: var(--accent);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.app-sidebar__footer {
+  border-top: 1px solid var(--border);
+  padding-top: 14px;
+  margin-top: 12px;
+}
+
+.app-user {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.app-user__info {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.app-user__name {
+  font-size: 14px;
+  font-weight: 650;
+  color: var(--text-h);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.app-user__email {
+  font-size: 12px;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.app-main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.app-topbar {
+  display: none;
+}
+
+.app-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.app-backdrop {
+  display: none;
+}
+
+/* Mobile: top bar with a hamburger, nav becomes a slide-in drawer. */
+@media (max-width: 899px) {
+  .app-shell {
+    flex-direction: column;
+  }
+
+  .app-topbar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 16px;
+    border-bottom: 1px solid var(--border);
+    background: var(--bg);
+    position: sticky;
+    top: 0;
+    z-index: 30;
+  }
+
+  .app-topbar .app-nav {
+    display: none;
+  }
+
+  .app-topbar__menu {
+    appearance: none;
+    border: 1px solid var(--border);
+    background: var(--bg);
+    border-radius: 8px;
+    width: 38px;
+    height: 38px;
+    display: inline-flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    cursor: pointer;
+    flex-shrink: 0;
+    padding: 0;
+  }
+
+  .app-topbar__menu:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 3px var(--accent-bg);
+  }
+
+  .app-topbar__menu span {
+    display: block;
+    width: 18px;
+    height: 2px;
+    border-radius: 2px;
+    background: var(--text-h);
+  }
+
+  .app-topbar__brand {
+    font-size: 19px;
+    font-weight: 750;
+    color: var(--accent);
+    text-decoration: none;
+  }
+
+  .app-sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    height: 100svh;
+    z-index: 40;
+    transform: translateX(-100%);
+    transition: transform 0.22s ease;
+    box-shadow: none;
+  }
+
+  .app-sidebar--open {
+    transform: translateX(0);
+  }
+
+  .app-backdrop {
+    display: block;
+    position: fixed;
+    inset: 0;
+    z-index: 35;
+    background: rgba(0, 0, 0, 0.4);
+    border: none;
+    cursor: default;
+  }
+}

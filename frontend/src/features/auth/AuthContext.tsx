@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import type { AuthUser } from "../../lib/types";
-import { getErrorMessage } from "../../services/api";
+import { getErrorMessage, onUnauthorized } from "../../services/api";
 import { clearToken, getToken, setToken } from "../../services/token";
 import { AuthContext, type AuthContextValue } from "./auth-context";
 import {
@@ -35,6 +35,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
 
     restoreSession();
+  }, []);
+
+  // A 401 from any API call means the stored token is no longer valid. Clear
+  // the in-memory session so ProtectedRoute redirects to /login.
+  useEffect(() => {
+    return onUnauthorized(() => {
+      clearToken();
+      setUser(null);
+    });
   }, []);
 
   const login = useCallback(async (payload: LoginPayload) => {

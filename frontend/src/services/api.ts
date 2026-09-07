@@ -17,11 +17,29 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
+/**
+ * Subscribers are notified when any request returns 401. The auth context
+ * subscribes here so an expired/invalid token clears the in-memory session and
+ * the ProtectedRoute guards redirect to /login. Keeps the axios layer free of
+ * router/view concerns.
+ */
+const unauthorizedListeners = new Set<() => void>();
+
+export const onUnauthorized = (listener: () => void): (() => void) => {
+  unauthorizedListeners.add(listener);
+  return () => {
+    unauthorizedListeners.delete(listener);
+  };
+};
+
 api.interceptors.response.use(
   (response) => response,
   (error: AxiosError<ApiErrorPayload>) => {
     if (error.response?.status === 401) {
       clearToken();
+      for (const listener of unauthorizedListeners) {
+        listener();
+      }
     }
     return Promise.reject(error);
   }

@@ -20,3 +20,15 @@ export type ApiEnvelope<T> = {
   message: string;
   data: T;
 };
+
+/**
+ * Shared pagination envelope. Mirrors backend PaginatedResult
+ * (src/modules/common/pagination.ts): `items`, not `rows`; newest-first.
+ */
+export interface PaginatedResult<T> {
+  items: T[];
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+}
