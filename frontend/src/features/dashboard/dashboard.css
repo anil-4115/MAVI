@@ -1,0 +1,74 @@
+/* ---------- Net position hero ---------- */
+
+.dash-hero {
+  border-radius: 16px;
+  border: 1px solid var(--border);
+  padding: 22px 24px;
+  margin-bottom: 20px;
+  background: var(--bg);
+}
+
+.dash-hero--positive {
+  border-color: var(--success-border);
+  background: var(--success-bg);
+}
+
+.dash-hero--negative {
+  border-color: var(--danger-border);
+  background: var(--danger-bg);
+}
+
+.dash-hero__eyebrow {
+  margin: 0 0 8px;
+  font-size: 13px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text);
+}
+
+.dash-hero__value {
+  margin: 0 0 6px;
+  font-size: 34px;
+  font-weight: 700;
+  letter-spacing: -0.6px;
+  color: var(--text-h);
+}
+
+.dash-hero--positive .dash-hero__value { color: var(--success); }
+.dash-hero--negative .dash-hero__value { color: var(--danger); }
+
+.dash-hero__detail {
+  margin: 0 0 10px;
+  font-size: 15px;
+  color: var(--text);
+}
+
+.dash-hero__meta {
+  margin: 0;
+  font-size: 13px;
+  color: var(--text);
+}
+
+/* ---------- Section header with inline action ---------- */
+
+.section__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.section__head .section__title {
+  margin-bottom: 0;
+}
+
+@media (max-width: 560px) {
+  .dash-hero {
+    padding: 18px;
+  }
+
+  .dash-hero__value {
+    font-size: 28px;
+  }
+}

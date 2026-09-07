@@ -181,6 +181,18 @@ Architecture:
 - Notifications foundation: feed (`GET /api/notifications`) with All/Unread filters, per-type descriptions from metadata, mark-one-read + mark-all-read (`PATCH`), paginated "Load more"; unread badge (`GET /api/notifications/unread-count`) in the shell
 - Money display: integer minor units from the backend are formatted for display with integer math only (`src/lib/money.ts`); no frontend financial calculations
 - Verification: `npm run build` clean; `npx oxlint` clean (no errors); live temp contract check 25/25 against the running backend covering auth/me, dashboard (empty + post-expense numbers), groups list/create/detail/members, balances, notifications list/unread-count/mark-read/read-all with cleanup; backend self-tests unchanged (splitting 65/65, balances 89/89, settlements 50/50, notifications 36/36); Vite dev server serves HTTP 200
+- Committed in `90be2ce` (with the full F.1 frontend foundation)
+
+#### F.2 Real dashboard — COMPLETE
+
+- Real dashboard built entirely on the existing `GET /api/dashboard` endpoint via the F.1 `dashboardApi.ts` service/types (reused unchanged; no backend changes)
+- Net-position hero (`NetHero`): prominent overall net card, sign-tinted (success/danger/neutral), backed only by backend `overallNetMinor`/`groupSumToReceiveMinor`/`groupSumToPayMinor`/`groupCount`; descriptive sentence derived from sign, zero frontend math
+- Summary grid: paid, owe (bad-when-positive), to-receive, to-pay (bad-when-positive), personal spending — printf `formatMoney` integer-minor-unit display only
+- Drill-downs: group rows link to `/groups/:id`; recent group expenses deep-link to their group detail; "All groups" shortcut; reusable `.row--link` affordance added to the design system
+- Recent activity sections: recent group expenses (title, group, relative date, amount+currency), recent personal expenses, recent settlements (direction label from payer/receiver ids, amount, short group id)
+- States: loading spinner, API-error `ErrorState` with retry, per-section `EmptyState`s with guidance; existing AppLayout/auth/routing/notification badge untouched and working
+- Responsive: hero + summary grid reflow, rows wrap their meta on ≤560px (applied to all shared `.row` lists)
+- Verification: `npm run build` clean; `npx oxlint` clean (no errors; only pre-existing benign `set-state-in-effect` warnings); live HTTP contract check 34/34 against the running backend (seeded 2 users + group + ₹500 equal-split expense + B-pays-A ₹100 settlement; asserted A: paid 50000/owed 25000/to-receive 15000/net 15000, B: to-pay 15000/net −15000, group overview, recent expenses/settlements; seed data cleaned up); backend self-tests unchanged green (splitting 65, balances 89, settlements 50, notifications 36)
 - Not committed yet — working tree left uncommitted for review
 
 ### Finalization
@@ -393,7 +405,7 @@ notifications/
 **Frontend:**
 
 - F.1 App shell/navigation — DONE
-- F.2 Real dashboard
+- F.2 Real dashboard — DONE
 - F.3 Groups
 - F.4 Expenses + splitting interface
 - F.5 Balances
@@ -455,12 +467,13 @@ When returning to the project after hours/days:
 
 ## CURRENT NEXT STEP
 
-### F.1 — Frontend app shell & foundations (COMPLETE)
+### F.2 — Real dashboard (COMPLETE)
 
-The authenticated application shell, central API/Auth foundation, real dashboard,
-groups foundation (list/create/detail/members/overview), group-detail tab
-structure, and the notifications feed + unread badge are implemented and verified
-against the live backend. The F.1 working tree is uncommitted, pending review.
+The dashboard is now a polished real dashboard backed entirely by the live
+`GET /api/dashboard` endpoint: a sign-tinted net-position hero, the F.1 summary
+grid, and drill-down links from groups and recent group expenses into group
+detail, with loading/error/empty states and mobile responsiveness — verified
+34/34 against the running backend. Working tree uncommitted, pending review.
 
-**Next major step: F.2 — Real dashboard polish** (extend the dashboard with deeper
-drill-downs now that the shell and data layer exist).
+**Next major step: F.3 — Groups polish** (extend group list/detail with deeper
+group management and affordances now that the dashboard drills into groups).
