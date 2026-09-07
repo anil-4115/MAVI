@@ -1,0 +1,221 @@
+/* Auth pages (login / register) and dashboard placeholder.
+   Reuses the design tokens (--accent, --border, --bg, --text-h, --shadow) from index.css. */
+
+.auth-page {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 32px 20px;
+  box-sizing: border-box;
+}
+
+.auth-card {
+  width: 100%;
+  max-width: 420px;
+  padding: 32px;
+  box-sizing: border-box;
+  text-align: left;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  box-shadow: var(--shadow);
+}
+
+.auth-title {
+  font-size: 28px;
+  letter-spacing: -0.5px;
+  margin: 0 0 4px;
+}
+
+.auth-subtitle {
+  font-size: 15px;
+  margin: 0;
+}
+
+.auth-form {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  margin-top: 24px;
+}
+
+.auth-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.auth-field label {
+  font-size: 14px;
+  font-weight: 550;
+  color: var(--text-h);
+}
+
+.auth-field input {
+  font-size: 16px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--text-h);
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+.auth-field input::placeholder {
+  color: var(--text);
+  opacity: 0.7;
+}
+
+.auth-field input:focus-visible {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-bg);
+}
+
+.auth-field--invalid input {
+  border-color: #e5484d;
+}
+
+.auth-field--invalid input:focus-visible {
+  box-shadow: 0 0 0 3px rgba(229, 72, 77, 0.15);
+}
+
+.auth-field-error {
+  font-size: 13px;
+  color: #e5484d;
+}
+
+.auth-banner {
+  margin-top: 20px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  font-size: 14px;
+  color: #e5484d;
+  background: rgba(229, 72, 77, 0.1);
+  border: 1px solid rgba(229, 72, 77, 0.35);
+}
+
+.auth-button {
+  font-size: 16px;
+  font-weight: 600;
+  padding: 12px 16px;
+  border-radius: 8px;
+  border: 1px solid transparent;
+  background: var(--accent);
+  color: #fff;
+  cursor: pointer;
+  transition:
+    opacity 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+.auth-button:hover:not(:disabled) {
+  opacity: 0.9;
+}
+
+.auth-button:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px var(--accent-bg);
+}
+
+.auth-button:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.auth-button--secondary {
+  background: transparent;
+  color: var(--text-h);
+  border-color: var(--border);
+  padding: 8px 14px;
+  font-size: 14px;
+}
+
+.auth-switch {
+  margin: 20px 0 0;
+  font-size: 15px;
+  text-align: center;
+}
+
+.auth-switch a {
+  color: var(--accent);
+}
+
+/* Dashboard placeholder */
+
+.dashboard-page {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  max-width: 860px;
+  margin: 0 auto;
+  padding: 32px 20px;
+  box-sizing: border-box;
+  text-align: left;
+}
+
+.dashboard-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid var(--border);
+}
+
+.dashboard-title {
+  font-size: 32px;
+  letter-spacing: -0.5px;
+  margin: 0;
+}
+
+.dashboard-card {
+  margin-top: 24px;
+  padding: 28px;
+  box-sizing: border-box;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  box-shadow: var(--shadow);
+}
+
+.dashboard-label {
+  font-size: 13px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text);
+  margin: 0 0 8px;
+}
+
+.dashboard-name {
+  font-size: 24px;
+  margin: 0 0 4px;
+}
+
+.dashboard-email {
+  font-size: 16px;
+  margin: 0 0 16px;
+}
+
+.dashboard-note {
+  font-size: 14px;
+  margin: 0;
+  color: var(--text);
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+}
+
+@media (max-width: 640px) {
+  .auth-card {
+    padding: 24px;
+  }
+
+  .dashboard-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}
