@@ -6,6 +6,7 @@ import groupsRouter from "../modules/groups/group.routes.js";
 import expensesRouter from "../modules/expenses/expense.routes.js";
 import balancesRouter from "../modules/balances/balances.routes.js";
 import settlementsRouter from "../modules/settlements/settlement.routes.js";
+import notificationsRouter from "../modules/notifications/notification.routes.js";
 
 const router = Router();
 
@@ -13,6 +14,7 @@ router.use("/health", healthRouter);
 router.use("/auth", authRouter);
 router.use("/users", usersRouter);
 router.use("/groups", groupsRouter);
+router.use("/notifications", notificationsRouter);
 router.use("/", expensesRouter);
 router.use("/", balancesRouter);
 router.use("/", settlementsRouter);

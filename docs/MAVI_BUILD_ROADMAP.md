@@ -142,7 +142,21 @@ Architecture:
 - Tests: `npm run build` clean; self-tests `balances-selftest` 89/89 (unchanged semantics), NEW `settlements-selftest` 50/50 (partial/full/over/cancelled/multiple/cross-group/conservation), `splitting-selftest` 65/65
 - Live smoke script written (`scripts/settlements-smoke.ts`, ~22 scenarios incl. authz, archived, removed members, dashboard, cross-group); **rerun when MongoDB Atlas is reachable** — blocked this session by `querySrv ECONNREFUSED` (cluster unreachable from this machine)
 
-#### H.8 Notifications — NEXT
+#### H.8 Notifications — COMPLETE
+
+- `notifications` collection: `recipient`, `type`, `group`, `actor`, `metadata`, `readAt`, timestamps; indexes `{recipient:1, createdAt:-1}` and `{recipient:1, readAt:1}`; no balances collection, never stores derived balances
+- Notification types (explicit, roadmap-aligned): `expense_created`, `group_invitation`, `invitation_accepted`, `member_removed`, `member_left`, `role_changed`, `ownership_transferred`, `group_archived`, `settlement_recorded`
+- APIs (all under `authenticate`):
+  - `GET /api/notifications` — current user's feed, paginated (newest first), optional `?status=all|unread` and `?type=<type>` filters
+  - `GET /api/notifications/unread-count` — lightweight unread badge count
+  - `PATCH /api/notifications/:notificationId/read` — mark one read (recipient-only; idempotent; non-recipient/unknown → 404)
+  - `PATCH /api/notifications/read-all` — mark all of the user's unread as read, returns `modifiedCount`
+- Generation: centralized in the Notifications module (pure `notification.events.ts` builders + fire-safe `notify` wrapper in `notification.service.ts`); groups/expenses/settlements services call it AFTER a successful mutation. One-way dependency (those modules import Notifications; Notifications imports nothing back) — no circular deps. Notification failures are logged and never break the core mutation.
+- Recipient policy: invitations → invitee; accept/leave → active owner+admin; removal → removed member; role/ownership change → the affected member; expense/archive → every other active member; settlement → payer & receiver (actor never self-notified)
+- No notifications for: invitation decline, personal expenses, expense update/void, settlement cancel (kept to roadmap-enumerated events)
+- H.7 service-level validation & INR integer-minor-unit rules preserved (amounts embed the already-validated integers)
+- Tests: `npm run build` clean; NEW `notifications-selftest` 36/36 (pure event builder + recipient-selector tests, no DB); existing `splitting-selftest` 65/65, `balances-selftest` 89/89, `settlements-selftest` 50/50 all unchanged
+- Live smoke (Atlas): `scripts/notifications-smoke.ts` 51/51 (invite→accept→decline, role change, expense, settlement, removal, leave, ownership transfer, archive, mark-read/read-all/pagination/filters/authorization/17-record total); `settlements-smoke.ts` re-verified 48/48; smoke data isolated (`@mavi-smoke.test`) and cleaned up (notifications closed in cleanups)
 
 ### Frontend
 
@@ -372,8 +386,8 @@ notifications/
 - H.4 Splitting — DONE
 - H.5 Expenses — DONE
 - H.6 Balances — DONE
-- H.7 Settlements — NEXT
-- H.8 Notifications
+- H.7 Settlements — DONE
+- H.8 Notifications — DONE
 
 **Frontend:**
 
@@ -440,8 +454,13 @@ When returning to the project after hours/days:
 
 ## CURRENT NEXT STEP
 
-### H.8 — Notifications
+### H.8 — Notifications (COMPLETE)
 
-The next implementation must build the Notifications backend module.
+The Notifications backend module is implemented and verified: lightweight records
+(recipient/type/group/actor/metadata/readAt/timestamps) generated from group activity
+(expense created, invitation, member accepted, member removed/left, role change,
+ownership transfer, group archived, settlement recorded), with list/unread-count/
+mark-read/read-all APIs. H.8 production smoke passed against MongoDB Atlas.
 
-Notifications are lightweight records (recipient/type/group/actor/metadata/readAt) generated when group activity happens (expense created, invitation, member accepted, settlement recorded, role change, etc.). H.7 is complete; do not start H.8 until H.7's live smoke test has been run against MongoDB Atlas and the module is approved.
+**Next major step: F.1 — Frontend app shell/navigation** (authentication pages exist;
+the business UI, including the notifications feed UI, is not started).

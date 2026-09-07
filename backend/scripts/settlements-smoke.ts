@@ -15,6 +15,7 @@ import { Expense } from "../src/modules/expenses/expense.model.js";
 import { createGroupExpense } from "../src/modules/expenses/expense.service.js";
 import { validateCreateExpense } from "../src/modules/expenses/expense.validation.js";
 import { Settlement } from "../src/modules/settlements/settlement.model.js";
+import { Notification } from "../src/modules/notifications/notification.model.js";
 import { cancelSettlement, createSettlement, listSettlements } from "../src/modules/settlements/settlement.service.js";
 import { getGroupBalances } from "../src/modules/balances/balances.service.js";
 import { getDashboard } from "../src/modules/balances/dashboard.service.js";
@@ -70,6 +71,7 @@ async function main(): Promise<void> {
     if (smokeUserIds.length > 0) {
       const smokeGroups = await Group.find({ "members.userId": { $in: smokeUserIds } }).select("_id");
       const smokeGroupIds = smokeGroups.map((g) => g._id);
+      await Notification.deleteMany({ group: { $in: smokeGroupIds } });
       await Settlement.deleteMany({ group: { $in: smokeGroupIds } });
       await Expense.deleteMany({ group: { $in: smokeGroupIds } });
       await Group.deleteMany({ _id: { $in: smokeGroupIds } });
@@ -268,6 +270,7 @@ async function main(): Promise<void> {
     check(allInts, "final: all amounts are integer minor units");
   } finally {
     /* ------------------------------- cleanup --------------------------------- */
+    await Notification.deleteMany({ group: { $in: cleanIds.groups } });
     await Settlement.deleteMany({ group: { $in: cleanIds.groups } });
     await Expense.deleteMany({ _id: { $in: cleanIds.expenses } });
     await Group.deleteMany({ _id: { $in: cleanIds.groups } });

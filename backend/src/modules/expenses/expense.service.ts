@@ -5,6 +5,7 @@ import { calculateShares } from "../splitting/splitting.js";
 import type { SplitRequest, SplitShare } from "../splitting/splitting.types.js";
 import { SplitValidationError } from "../splitting/splitting.types.js";
 import { Expense, type ExpenseDocument } from "./expense.model.js";
+import { notify, onExpenseCreated } from "../notifications/notification.service.js";
 import type { PublicExpense } from "./expense.types.js";
 import {
   getParticipantUserIds,
@@ -163,6 +164,15 @@ export async function createGroupExpense(
     voidedAt: null,
     voidedBy: null,
   })) as unknown as ExpenseDocument;
+
+  await notify(
+    onExpenseCreated(group, actorId, {
+      id: expense._id.toString(),
+      title: expense.title,
+      amountMinor: expense.amountMinor,
+      currency: expense.currency,
+    }),
+  );
 
   return toPublicExpense(expense);
 }

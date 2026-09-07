@@ -4,6 +4,16 @@ import { Group, type GroupDocument } from "./group.model.js";
 import { ApiError } from "../../utils/ApiError.js";
 import { DEFAULT_CURRENCY } from "../common/money.js";
 import { assertOwnerInvariant, type AddMemberInput, type CreateGroupInput, type RoleInput, type UpdateGroupInput } from "./group.validation.js";
+import {
+  notify,
+  onGroupArchived,
+  onGroupInvitation,
+  onInvitationAccepted,
+  onMemberLeft,
+  onMemberRemoved,
+  onOwnershipTransferred,
+  onRoleChanged,
+} from "../notifications/notification.service.js";
 import type {
   GroupInvitePreview,
   GroupMemberInput,
@@ -200,6 +210,8 @@ export async function archiveGroup(groupId: string, actorId: string): Promise<Pu
   group.archivedAt = new Date();
   await group.save();
 
+  await notify(onGroupArchived(group, actorId));
+
   // Visible only via explicit detail call (not the archived-excluded list).
   return toPublicGroup(group, actorId);
 }
@@ -245,6 +257,8 @@ export async function inviteMember(
 
   assertOwnerInvariant(group.members);
   await group.save();
+
+  await notify(onGroupInvitation(group, actorId, targetId));
   return toPublicGroup(group, actorId);
 }
 
@@ -301,6 +315,10 @@ export async function respondToInvitation(
 
   assertOwnerInvariant(group.members);
   await group.save();
+
+  if (action === "accept") {
+    await notify(onInvitationAccepted(group, invitedUserId));
+  }
 }
 
 /* ---------------------------------- remove --------------------------------- */
@@ -335,6 +353,8 @@ export async function removeMember(
   target.status = "declined";
   assertOwnerInvariant(group.members);
   await group.save();
+
+  await notify(self ? onMemberLeft(group, actorId) : onMemberRemoved(group, actorId, targetUserId));
 }
 
 /* ----------------------------------- roles --------------------------------- */
@@ -362,6 +382,8 @@ export async function changeRole(
   target.role = roleInput.role;
   assertOwnerInvariant(group.members);
   await group.save();
+
+  await notify(onRoleChanged(group, actorId, targetUserId, roleInput.role));
   return toPublicGroup(group, actorId);
 }
 
@@ -393,5 +415,7 @@ export async function transferOwnership(
 
   assertOwnerInvariant(group.members);
   await group.save();
+
+  await notify(onOwnershipTransferred(group, actorId, newOwnerId));
   return toPublicGroup(group, newOwnerId);
 }

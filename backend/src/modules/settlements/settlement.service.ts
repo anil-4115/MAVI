@@ -5,6 +5,7 @@ import { Settlement, type SettlementDocument } from "./settlement.model.js";
 import type { CreateSettlementInput, PublicSettlement, SettlementStatus } from "./settlement.types.js";
 import { SETTLEMENT_STATUSES } from "./settlement.types.js";
 import { assertValidSettlementInput } from "./settlement.validation.js";
+import { notify, onSettlementRecorded } from "../notifications/notification.service.js";
 
 const toPublicSettlement = (settlement: SettlementDocument): PublicSettlement => ({
   id: settlement._id.toString(),
@@ -85,6 +86,16 @@ export async function createSettlement(
     createdBy: new Types.ObjectId(actorId),
     status: "completed",
   })) as unknown as SettlementDocument;
+
+  await notify(
+    onSettlementRecorded(group, actorId, {
+      id: settlement._id.toString(),
+      payerId: settlement.payerId.toString(),
+      receiverId: settlement.receiverId.toString(),
+      amountMinor: settlement.amountMinor,
+      currency: settlement.currency,
+    }),
+  );
 
   return toPublicSettlement(settlement);
 }
