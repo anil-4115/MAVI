@@ -1,13 +1,14 @@
 import { EmptyState } from "../../../components/ui/EmptyState";
 import { formatMoney } from "../../../lib/money";
-import type { SettlementView } from "../api/dashboardApi";
+import type { DashboardGroupOverview, SettlementView } from "../api/dashboardApi";
 
 interface RecentSettlementsProps {
   settlements: SettlementView[];
+  groups: DashboardGroupOverview[];
   currentUserId: string | null;
 }
 
-export function RecentSettlements({ settlements, currentUserId }: RecentSettlementsProps) {
+export function RecentSettlements({ settlements, groups, currentUserId }: RecentSettlementsProps) {
   if (settlements.length === 0) {
     return (
       <section className="section" aria-label="Recent settlements">
@@ -16,6 +17,9 @@ export function RecentSettlements({ settlements, currentUserId }: RecentSettleme
       </section>
     );
   }
+
+  const groupName = (groupId: string): string =>
+    groups.find((group) => group.id === groupId)?.name ?? "a group";
 
   return (
     <section className="section" aria-label="Recent settlements">
@@ -33,7 +37,7 @@ export function RecentSettlements({ settlements, currentUserId }: RecentSettleme
             <li key={`${settlement.groupId}-${index}`} className="row">
               <div>
                 <p className="row__primary">{label}</p>
-                <p className="row__secondary">Group {settlement.groupId.slice(0, 6)}</p>
+                <p className="row__secondary">{groupName(settlement.groupId)}</p>
               </div>
               <p className="row__meta">{formatMoney(settlement.amountMinor)}</p>
             </li>

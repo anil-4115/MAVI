@@ -1,0 +1,76 @@
+.settlements-toolbar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.settlements-filters {
+  display: inline-flex;
+  gap: 8px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+}
+
+.settlements-filters__item--active {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+.settlement-row {
+  align-items: center;
+  gap: 12px;
+}
+
+.settlement-row__info {
+  min-width: 0;
+  flex: 1;
+}
+
+.settlement-row__aside {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-shrink: 0;
+}
+
+.settlement-row .row__meta {
+  min-width: max-content;
+}
+
+.settlements-note {
+  margin: 0 0 12px;
+  font-size: var(--font-sm, 0.875rem);
+  color: var(--text-muted, #64748b);
+}
+
+.settlements-more {
+  display: flex;
+  justify-content: center;
+  margin-top: 16px;
+}
+
+/* Settlement record dialog uses the shared dialog scaffolding; keep fields stacked
+   two-up on wide screens and single column when space is tight. */
+.settlement-form .form {
+  margin-top: 12px;
+}
+
+.settlement-form__row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+@media (max-width: 560px) {
+  .settlement-form__row {
+    grid-template-columns: 1fr;
+  }
+
+  .settlement-row__aside {
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 6px;
+  }
+}

@@ -14,4 +14,4 @@ MERN monorepo: `frontend/` (React 19 + Vite) and `backend/` (Express 5 + Mongoos
 
 - Commands: `npm run dev` (vite), `npm run build` (`tsc -b && vite build`), `npm run lint` (oxlint, NOT eslint), `npm run preview`.
 - `tsconfig.app.json` enforces `verbatimModuleSyntax` (use `import type` for types) and `erasableSyntaxOnly` (no TS enums/namespaces — use union types / const objects). Note: `strict` is NOT enabled.
-- `src/services/api.ts` hardcodes the backend base URL as `http://localhost:5000/api`; run the backend on port 5000 for the dev setup to work (there is no frontend env config).
+- `src/services/api.ts` resolves the backend base URL from `import.meta.env.VITE_API_URL`, defaulting to `http://localhost:5000/api`; run the backend on port 5000 for the dev setup to work, or set `VITE_API_URL` at build time to override for a deployed environment.

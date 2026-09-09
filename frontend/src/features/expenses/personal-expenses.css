@@ -1,0 +1,32 @@
+/* F.8 personal-expense styles. Uses the shared design tokens (index.css/ui.css)
+   and the expenses.css form/row primitives. */
+
+.personal-form__row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.personal-row__meta {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.personal-row__amount {
+  font-weight: 600;
+  color: var(--text-h);
+}
+
+.personal-row__actions {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  justify-content: flex-end;
+}
+
+@media (max-width: 640px) {
+  .personal-form__row {
+    grid-template-columns: 1fr;
+  }
+}

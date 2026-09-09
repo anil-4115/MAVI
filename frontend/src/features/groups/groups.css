@@ -48,3 +48,133 @@
   color: var(--text);
   margin: 8px 0 0;
 }
+
+/* Inline "you" badge next to a member name */
+.badge--inline {
+  margin-left: 8px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-size: 11px;
+}
+
+/* ---------- Group management card ---------- */
+
+.mgmt-card {
+  margin-bottom: 24px;
+}
+
+.mgmt-card__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.mgmt-card__head .card__title {
+  margin-bottom: 0;
+}
+
+.mgmt-card__hint {
+  font-size: 14px;
+  color: var(--text);
+  margin: 12px 0 0;
+}
+
+.mgmt-card__danger {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 10px;
+  margin-top: 18px;
+  padding-top: 18px;
+  border-top: 1px solid var(--border);
+}
+
+/* ---------- Invite member form ---------- */
+
+.invite-form {
+  margin-top: 12px;
+  padding: 14px 16px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--bg);
+}
+
+.invite-form__search {
+  display: flex;
+  align-items: flex-end;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.invite-form__field {
+  flex: 1 1 260px;
+  margin-bottom: 0;
+}
+
+.invite-form__empty {
+  font-size: 14px;
+  color: var(--text);
+  margin-top: 10px;
+}
+
+.invite-form__results {
+  margin-top: 14px;
+}
+
+.members-toolbar {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0;
+  margin-bottom: 14px;
+}
+
+/* ---------- Members actions ---------- */
+
+.members-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.members-actions__since {
+  font-size: 12px;
+  color: var(--text);
+  margin: 0;
+}
+
+.members-actions__buttons {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  justify-content: flex-end;
+}
+
+/* ---------- Invitation preview card ---------- */
+
+.invitation-card {
+  max-width: 520px;
+}
+
+.invitation-card__body {
+  margin: 16px 0;
+}
+
+.invitation-card__copy {
+  font-size: 15px;
+  color: var(--text);
+}
+
+.invitation-card__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+@media (max-width: 560px) {
+  .members-actions__buttons {
+    justify-content: flex-start;
+  }
+}

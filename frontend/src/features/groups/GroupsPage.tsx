@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from "react";
+import { useCallback, useEffect, useState, type FormEvent } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Banner } from "../../components/ui/Banner";
 import { EmptyState } from "../../components/ui/EmptyState";
@@ -6,26 +6,19 @@ import { ErrorState } from "../../components/ui/ErrorState";
 import { Spinner } from "../../components/ui/Spinner";
 import { formatDateTime } from "../../lib/format";
 import { getErrorMessage } from "../../services/api";
-import { createGroup, listGroups, type PublicGroup } from "./api/groupsApi";
+import { createGroup, listGroups, type PublicGroup, type GroupRole } from "./api/groupsApi";
+import { validateGroupDescription, validateGroupName } from "./lib/validators";
 
-/** Mirror of backend name/description rules (group.validation.ts). */
-const validateName = (value: string): string | null => {
-  const trimmed = value.trim();
-  if (!trimmed) {
-    return "Group name is required.";
+function roleBadge(role: GroupRole | null): string {
+  switch (role) {
+    case "owner":
+      return "badge--accent";
+    case "admin":
+      return "badge--success";
+    default:
+      return "badge--muted";
   }
-  if (trimmed.length > 80) {
-    return "Group name must be 80 characters or fewer.";
-  }
-  return null;
-};
-
-const validateDescription = (value: string): string | null => {
-  if (value.trim().length > 300) {
-    return "Description must be 300 characters or fewer.";
-  }
-  return null;
-};
+}
 
 function GroupCard({ group }: { group: PublicGroup }) {
   return (
@@ -33,7 +26,7 @@ function GroupCard({ group }: { group: PublicGroup }) {
       <div className="card">
         <div className="group-card__top">
           <h3 className="group-card__name">{group.name}</h3>
-          <span className="badge badge--accent">{group.myRole ?? "member"}</span>
+          <span className={`badge ${roleBadge(group.myRole)}`}>{group.myRole ?? "member"}</span>
         </div>
         {group.description && <p className="group-card__description">{group.description}</p>}
         <p className="group-card__meta">
@@ -60,7 +53,7 @@ export function GroupsPage() {
   const [formError, setFormError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const load = async () => {
+  const load = useCallback(async () => {
     setError(null);
     setGroups(null);
     try {
@@ -68,13 +61,17 @@ export function GroupsPage() {
     } catch (loadError) {
       setError(getErrorMessage(loadError));
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    void load();
+  }, [load]);
 
   const handleSubmit = async (event: FormEvent) => {
     event.preventDefault();
     const errors = {
-      name: validateName(name),
-      description: validateDescription(description),
+      name: validateGroupName(name),
+      description: validateGroupDescription(description),
     };
     setFieldErrors(errors);
     setFormError(null);

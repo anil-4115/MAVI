@@ -5,6 +5,7 @@ import { GuestRoute, ProtectedRoute } from "./features/auth/ProtectedRoute";
 import { LoginPage } from "./features/auth/pages/LoginPage";
 import { RegisterPage } from "./features/auth/pages/RegisterPage";
 import { DashboardPage } from "./features/dashboard/DashboardPage";
+import { PersonalExpensesPage } from "./features/expenses/PersonalExpensesPage";
 import { GroupDetailPage } from "./features/groups/GroupDetailPage";
 import { GroupsPage } from "./features/groups/GroupsPage";
 import { NotificationsPage } from "./features/notifications/NotificationsPage";
@@ -43,6 +44,7 @@ function AppRoutes() {
         <Route path="/dashboard" element={<DashboardPage />} />
         <Route path="/groups" element={<GroupsPage />} />
         <Route path="/groups/:groupId" element={<GroupDetailPage />} />
+        <Route path="/expenses/personal" element={<PersonalExpensesPage />} />
         <Route path="/notifications" element={<NotificationsPage />} />
       </Route>
 

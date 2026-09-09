@@ -1,0 +1,248 @@
+/* F.4 group-expense styles. Uses the shared design tokens (index.css/ui.css). */
+
+.form-hint {
+  font-size: 13px;
+  color: var(--text);
+  margin: 0 0 8px;
+}
+
+/* ---------- Expense form ---------- */
+
+.expense-form {
+  max-width: 720px;
+}
+
+.expense-form__row {
+  display: grid;
+  grid-template-columns: 1.6fr 1fr 1.2fr;
+  gap: 12px;
+}
+
+.expense-methods {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.expense-method {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  padding: 8px 12px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  color: var(--text);
+  cursor: pointer;
+  transition:
+    border-color 0.15s ease,
+    color 0.15s ease,
+    background 0.15s ease;
+}
+
+.expense-method input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.expense-method--active {
+  color: var(--accent);
+  border-color: var(--accent-border);
+  background: var(--accent-bg);
+}
+
+/* ---------- Participant picker ---------- */
+
+.expense-participant-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+.expense-check {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  color: var(--text-h);
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  cursor: pointer;
+  background: var(--bg);
+}
+
+.expense-check input {
+  accent-color: var(--accent);
+}
+
+/* ---------- Per-method entries ---------- */
+
+.expense-entries {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 6px;
+}
+
+.expense-entry {
+  display: grid;
+  grid-template-columns: 1fr 160px;
+  align-items: end;
+  gap: 12px;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--bg);
+}
+
+.expense-entry__name {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-h);
+  align-self: center;
+}
+
+.expense-entry__field {
+  margin-bottom: 0;
+}
+
+.expense-balance {
+  font-size: 13px;
+  color: var(--success);
+  margin: 4px 0 0;
+}
+
+.expense-balance--warn {
+  color: var(--text);
+}
+
+/* ---------- Item-wise editor ---------- */
+
+.expense-items {
+  margin-bottom: 6px;
+}
+
+.expense-items__balance {
+  font-size: 13px;
+  color: var(--success);
+  margin: 4px 0 12px;
+}
+
+.expense-items__balance--warn {
+  color: var(--text);
+}
+
+.expense-items__list {
+  list-style: none;
+  margin: 0 0 14px;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.expense-item {
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 14px;
+  background: var(--bg);
+}
+
+.expense-item__row {
+  display: grid;
+  grid-template-columns: 1.2fr 1fr auto;
+  align-items: end;
+  gap: 12px;
+}
+
+.expense-item__title .field,
+.expense-item__amount .field {
+  margin-bottom: 0;
+}
+
+.expense-item__remove {
+  align-self: center;
+}
+
+.expense-item__participants {
+  margin-top: 12px;
+}
+
+.expense-item__participants .expense-participant-grid {
+  margin-bottom: 0;
+}
+
+/* ---------- Expense list rows ---------- */
+
+.expense-row + .expense-row {
+  border-top: 1px solid var(--border);
+}
+
+.expense-row__toggle {
+  width: 100%;
+  background: none;
+  border: none;
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.expense-row__amount {
+  gap: 10px;
+}
+
+.expense-row__detail {
+  padding: 4px 16px 16px;
+  background: var(--accent-bg);
+}
+
+.expense-row__meta-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 12px;
+  margin: 12px 0 16px;
+}
+
+.expense-row__meta-value {
+  font-size: 14px;
+  color: var(--text-h);
+  margin: 0;
+}
+
+.expense-shares__list {
+  margin-top: 4px;
+}
+
+.expense-row__actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 16px;
+}
+
+.expenses-more {
+  margin-top: 16px;
+}
+
+@media (max-width: 640px) {
+  .expense-form__row {
+    grid-template-columns: 1fr;
+  }
+
+  .expense-entry {
+    grid-template-columns: 1fr;
+  }
+
+  .expense-item__row {
+    grid-template-columns: 1fr;
+    align-items: start;
+  }
+
+  .expense-item__remove {
+    justify-self: start;
+  }
+}

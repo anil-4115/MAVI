@@ -13,6 +13,7 @@ interface NavItem {
 const NAV_ITEMS: NavItem[] = [
   { to: "/dashboard", label: "Dashboard", end: true },
   { to: "/groups", label: "Groups" },
+  { to: "/expenses/personal", label: "Personal expenses" },
   { to: "/notifications", label: "Notifications" },
 ];
 

@@ -496,3 +496,48 @@
   border-color: var(--accent-border);
   transform: translateY(-1px);
 }
+
+/* ---------- Dialog ---------- */
+
+.dialog-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  background: rgba(0, 0, 0, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  box-sizing: border-box;
+}
+
+.dialog {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  box-shadow: var(--shadow);
+  padding: 22px;
+  max-width: 440px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.dialog__title {
+  font-size: 17px;
+  letter-spacing: -0.2px;
+  margin: 0 0 8px;
+  color: var(--text-h);
+}
+
+.dialog__message {
+  font-size: 14px;
+  color: var(--text);
+  margin: 0 0 18px;
+}
+
+.dialog__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  flex-wrap: wrap;
+}

@@ -3,9 +3,10 @@ import api from "../../../services/api";
 
 /**
  * Group API types mirror the backend contract
- * (backend/src/modules/groups/group.types.ts). Only the endpoints required by
- * F.1 are exposed; invite/role/owner/settlement endpoints come with later
- * phases.
+ * (backend/src/modules/groups/group.types.ts and group.routes.ts). All group
+ * management endpoints (update/archive/invite/accept/decline/remove/role/
+ * ownership) carry their backend authorization rules; the UI gates controls by
+ * `myRole` but the server remains authoritative.
  */
 
 export const GROUP_ROLES = ["owner", "admin", "member"] as const;
@@ -44,6 +45,22 @@ export interface CreateGroupPayload {
   currency?: string;
 }
 
+export interface UpdateGroupPayload {
+  name?: string;
+  description?: string;
+}
+
+/** Public preview visible to an invited user before they accept (GET /groups/:id/preview). */
+export interface GroupInvitePreview {
+  id: string;
+  name: string;
+  description?: string;
+  currency: string;
+  myStatus: MemberStatus;
+}
+
+export type ManageableRole = Exclude<GroupRole, "owner">;
+
 interface GroupResponse extends ApiEnvelope<{ group: PublicGroup }> {
   success: true;
 }
@@ -53,6 +70,10 @@ interface GroupsResponse extends ApiEnvelope<{ groups: PublicGroup[] }> {
 }
 
 interface MembersResponse extends ApiEnvelope<{ members: PublicGroupMember[] }> {
+  success: true;
+}
+
+interface InvitePreviewResponse extends ApiEnvelope<{ group: GroupInvitePreview }> {
   success: true;
 }
 
@@ -68,6 +89,69 @@ export const createGroup = async (payload: CreateGroupPayload): Promise<PublicGr
 
 export const getGroup = async (groupId: string): Promise<PublicGroup> => {
   const response = await api.get<GroupResponse>(`/groups/${groupId}`);
+  return response.data.data.group;
+};
+
+export const getGroupInvitePreview = async (groupId: string): Promise<GroupInvitePreview> => {
+  const response = await api.get<InvitePreviewResponse>(`/groups/${groupId}/preview`);
+  return response.data.data.group;
+};
+
+/** Owner/admin only on the backend. */
+export const updateGroup = async (
+  groupId: string,
+  payload: UpdateGroupPayload,
+): Promise<PublicGroup> => {
+  const response = await api.patch<GroupResponse>(`/groups/${groupId}`, payload);
+  return response.data.data.group;
+};
+
+/** Owner only on the backend (PATCH-less archive via DELETE). */
+export const archiveGroup = async (groupId: string): Promise<PublicGroup> => {
+  const response = await api.delete<GroupResponse>(`/groups/${groupId}`);
+  return response.data.data.group;
+};
+
+/** Owner/admin invite a registered user by id. */
+export const inviteMember = async (groupId: string, userId: string): Promise<PublicGroup> => {
+  const response = await api.post<GroupResponse>(`/groups/${groupId}/members`, { userId });
+  return response.data.data.group;
+};
+
+/** Respond to your own invitation (the backend requires userId === caller). */
+export const acceptInvitation = async (groupId: string, userId: string): Promise<void> => {
+  await api.post<ApiEnvelope<null>>(`/groups/${groupId}/members/${userId}/accept`);
+};
+
+export const declineInvitation = async (groupId: string, userId: string): Promise<void> => {
+  await api.post<ApiEnvelope<null>>(`/groups/${groupId}/members/${userId}/decline`);
+};
+
+/** Remove another member (owner/admin) or leave the group yourself. */
+export const removeMember = async (groupId: string, userId: string): Promise<void> => {
+  await api.delete<ApiEnvelope<null>>(`/groups/${groupId}/members/${userId}`);
+};
+
+/** Owner only: promote/demote an active non-owner member. */
+export const changeMemberRole = async (
+  groupId: string,
+  userId: string,
+  role: ManageableRole,
+): Promise<PublicGroup> => {
+  const response = await api.patch<GroupResponse>(`/groups/${groupId}/members/${userId}/role`, {
+    role,
+  });
+  return response.data.data.group;
+};
+
+/** Owner only: hand the group to another active member (demotes you to admin). */
+export const transferOwnership = async (
+  groupId: string,
+  newOwnerId: string,
+): Promise<PublicGroup> => {
+  const response = await api.patch<GroupResponse>(`/groups/${groupId}/owner`, {
+    userId: newOwnerId,
+  });
   return response.data.data.group;
 };
 

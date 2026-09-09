@@ -1,14 +1,24 @@
 import { useEffect, useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { Banner } from "../../components/ui/Banner";
 import { ErrorState } from "../../components/ui/ErrorState";
 import { Spinner } from "../../components/ui/Spinner";
 import { formatDate } from "../../lib/format";
 import { getErrorMessage } from "../../services/api";
-import { getGroup, type PublicGroup } from "./api/groupsApi";
-import { ComingSoonTab } from "./components/ComingSoonTab";
+import { useAuth } from "../auth/useAuth";
+import { getGroup, getGroupInvitePreview, type GroupInvitePreview, type PublicGroup } from "./api/groupsApi";
+import { GroupInvitation } from "./components/GroupInvitation";
+import { GroupSettings } from "./components/GroupSettings";
 import { MembersTab } from "./components/MembersTab";
 import { OverviewTab } from "./components/OverviewTab";
+import { ExpensesTab } from "../expenses/components/ExpensesTab";
+import { BalancesTab } from "../balances/components/BalancesTab";
+import { SettlementsTab } from "../settlements/components/SettlementsTab";
+import { ActivityTab } from "../notifications/components/ActivityTab";
+import "../expenses/expenses.css";
+import "../balances/balances.css";
+import "../settlements/settlements.css";
+import "../notifications/notifications.css";
 import "./groups.css";
 
 type TabId = "overview" | "expenses" | "balances" | "settlements" | "members" | "activity";
@@ -22,34 +32,69 @@ const TABS: { id: TabId; label: string }[] = [
   { id: "activity", label: "Activity" },
 ];
 
+const isTabId = (value: string | null): value is TabId =>
+  value !== null && TABS.some((tab) => tab.id === value);
+
 export function GroupDetailPage() {
   const { groupId } = useParams<{ groupId: string }>();
+  const { user } = useAuth();
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const urlTab = searchParams.get("tab");
+
   const [group, setGroup] = useState<PublicGroup | null>(null);
+  const [invite, setInvite] = useState<GroupInvitePreview | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<TabId>("overview");
+  const [activeTab, setActiveTab] = useState<TabId>(isTabId(urlTab) ? urlTab : "overview");
+  const [reloadKey, setReloadKey] = useState(0);
+
+  /* Deep links (`/groups/:id?tab=expenses` from notification targets) switch the
+     active tab only when the URL tab value changes, so in-page tab clicks are
+     never overridden. */
+  useEffect(() => {
+    if (isTabId(urlTab)) {
+      setActiveTab(urlTab);
+    }
+  }, [urlTab]);
 
   useEffect(() => {
     if (!groupId) {
       return;
     }
     let active = true;
-    setError(null);
-    setGroup(null);
-    getGroup(groupId)
+    void getGroup(groupId)
       .then((result) => {
         if (active) {
           setGroup(result);
+          setInvite(null);
         }
       })
-      .catch((loadError: unknown) => {
-        if (active) {
-          setError(getErrorMessage(loadError));
+      .catch(async (loadError: unknown) => {
+        const original = getErrorMessage(loadError);
+        try {
+          const preview = await getGroupInvitePreview(groupId);
+          if (active) {
+            setInvite(preview);
+            setError(null);
+          }
+        } catch {
+          if (active) {
+            setError(original);
+          }
         }
       });
+    setError(null);
+    setNotice(null);
     return () => {
       active = false;
     };
-  }, [groupId]);
+  }, [groupId, reloadKey]);
+
+  const refresh = () => {
+    setGroup(null);
+    setReloadKey((key) => key + 1);
+  };
 
   if (error) {
     return (
@@ -62,6 +107,17 @@ export function GroupDetailPage() {
     );
   }
 
+  if (invite && user) {
+    return (
+      <GroupInvitation
+        preview={invite}
+        currentUserId={user.id}
+        onAccepted={refresh}
+        onDeclined={() => navigate("/groups")}
+      />
+    );
+  }
+
   if (!group) {
     return (
       <div className="app-page">
@@ -69,6 +125,8 @@ export function GroupDetailPage() {
       </div>
     );
   }
+
+  const showSettings = !group.archived && (group.myRole === "owner" || group.myRole === "admin");
 
   return (
     <div className="app-page">
@@ -81,7 +139,13 @@ export function GroupDetailPage() {
           <div className="group-detail__title-row">
             <h1 className="page-title">{group.name}</h1>
             {group.archived && <span className="badge badge--muted">archived</span>}
-            {group.myRole && <span className="badge badge--accent">{group.myRole}</span>}
+            {group.myRole && (
+              <span
+                className={`badge ${group.myRole === "owner" ? "badge--accent" : group.myRole === "admin" ? "badge--success" : "badge--muted"}`}
+              >
+                {group.myRole}
+              </span>
+            )}
           </div>
           {group.description && <p className="page-subtitle">{group.description}</p>}
           <p className="group-detail__meta">
@@ -96,6 +160,22 @@ export function GroupDetailPage() {
           This group is archived. It is read-only; new expenses and settlements can&apos;t be
           added.
         </Banner>
+      )}
+
+      {notice && <Banner tone="success">{notice}</Banner>}
+
+      {showSettings && (
+        <GroupSettings
+          group={group}
+          onSaved={(updated) => {
+            setGroup(updated);
+            setNotice("Group details updated.");
+          }}
+          onArchived={(updated) => {
+            setGroup(updated);
+            setNotice("Group archived. It is now read-only for every member.");
+          }}
+        />
       )}
 
       <div className="tabs" role="tablist" aria-label="Group sections">
@@ -114,30 +194,45 @@ export function GroupDetailPage() {
       </div>
 
       {activeTab === "overview" && <OverviewTab groupId={group.id} />}
-      {activeTab === "members" && <MembersTab groupId={group.id} />}
+      {activeTab === "members" && (
+        <MembersTab
+          groupId={group.id}
+          myRole={group.myRole}
+          currentUserId={user?.id ?? null}
+          reloadKey={reloadKey}
+          onGroupChanged={refresh}
+        />
+      )}
       {activeTab === "expenses" && (
-        <ComingSoonTab
-          phase="F.4"
-          description="The full group expenses list and create/edit/void flow lands in F.4."
+        <ExpensesTab
+          groupId={group.id}
+          currency={group.currency}
+          archived={group.archived}
+          myRole={group.myRole}
+          currentUserId={user?.id ?? null}
+          onGroupChanged={refresh}
         />
       )}
       {activeTab === "balances" && (
-        <ComingSoonTab
-          phase="F.5"
-          description="Member-by-member balances, pairwise obligations and suggestions land in F.5."
+        <BalancesTab
+          groupId={group.id}
+          currency={group.currency}
+          archived={group.archived}
+          currentUserId={user?.id ?? null}
         />
       )}
       {activeTab === "settlements" && (
-        <ComingSoonTab
-          phase="F.6"
-          description="Recording and cancelling settlements lands in F.6."
+        <SettlementsTab
+          groupId={group.id}
+          currency={group.currency}
+          archived={group.archived}
+          myRole={group.myRole}
+          currentUserId={user?.id ?? null}
+          onGroupChanged={refresh}
         />
       )}
       {activeTab === "activity" && (
-        <ComingSoonTab
-          phase="F.7"
-          description="Group-scoped activity and notifications land in F.7."
-        />
+        <ActivityTab groupId={group.id} currentUserId={user?.id ?? null} />
       )}
     </div>
   );

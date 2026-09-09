@@ -108,6 +108,7 @@ async function main(): Promise<void> {
     ]);
 
     g1 = (await createGroup(validateCreateGroup({ name: "H8 Smoke Group", description: "notifications smoke", currency: "INR" }), aId)).id;
+    cleanIds.groups.push(g1);
 
     /* ------------------------- Test A: group_invitation ---------------------- */
     await inviteMember(g1, aId, validateAddMember({ userId: bId }));

@@ -76,7 +76,11 @@ export function DashboardPage() {
 
       <RecentPersonalExpenses expenses={data.recentPersonalExpenses} />
 
-      <RecentSettlements settlements={data.recentSettlements} currentUserId={user?.id ?? null} />
+      <RecentSettlements
+        settlements={data.recentSettlements}
+        groups={data.groups}
+        currentUserId={user?.id ?? null}
+      />
     </div>
   );
 }
