@@ -1,6 +1,6 @@
 import express from "express";
 import cors from "cors";
-import { connectDatabase } from "./config/database.js";
+import { connectDatabase, registerConnectionHandlers } from "./config/database.js";
 import { env } from "./config/env.js";
 import { errorHandler } from "./middleware/errorHandler.js";
 import { notFound } from "./middleware/notFound.js";
@@ -19,6 +19,7 @@ app.use(notFound);
 app.use(errorHandler);
 
 const startServer = async (): Promise<void> => {
+  registerConnectionHandlers();
   await connectDatabase();
 
   app.listen(env.port, () => {
