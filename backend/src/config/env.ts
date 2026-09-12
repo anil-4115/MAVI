@@ -17,6 +17,7 @@ const isJwtExpiresIn = (value: string): value is JwtExpiresIn =>
 
 const parseEnv = (): {
   port: number;
+  listenHost: string;
   mongoUri: string;
   nodeEnv: NodeEnv;
   isProduction: boolean;
@@ -57,6 +58,7 @@ const parseEnv = (): {
 
   return {
     port: Number(rawPort),
+    listenHost: nodeEnv === "production" ? "0.0.0.0" : "localhost",
     mongoUri: rawMongoUri,
     nodeEnv,
     isProduction: nodeEnv === "production",

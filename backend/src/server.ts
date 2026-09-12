@@ -22,8 +22,8 @@ const startServer = async (): Promise<void> => {
   registerConnectionHandlers();
   await connectDatabase();
 
-  app.listen(env.port, () => {
-    console.log(`MAVI Backend running on http://localhost:${env.port}`);
+  app.listen(env.port, env.listenHost, () => {
+    console.log(`MAVI Backend running on http://${env.listenHost}:${env.port}`);
   });
 };
 
