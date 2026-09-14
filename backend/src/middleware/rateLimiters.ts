@@ -4,8 +4,10 @@ import {
   type RateLimitRequestHandler,
 } from "express-rate-limit";
 import {
+  RATE_LIMIT_AUTH_FORGOT_PASSWORD_MAX,
   RATE_LIMIT_AUTH_LOGIN_MAX,
   RATE_LIMIT_AUTH_REGISTER_MAX,
+  RATE_LIMIT_AUTH_RESET_PASSWORD_MAX,
   RATE_LIMIT_AUTH_VERIFY_EMAIL_MAX,
   RATE_LIMIT_GENERAL_API_MAX,
   RATE_LIMIT_WINDOW_MS,
@@ -19,6 +21,8 @@ export interface RateLimiterOptions {
   authLoginMax: number;
   authRegisterMax: number;
   authVerifyEmailMax: number;
+  authForgotPasswordMax: number;
+  authResetPasswordMax: number;
   generalApiMax: number;
 }
 
@@ -26,6 +30,8 @@ export interface RateLimiters {
   authLogin: RateLimitRequestHandler;
   authRegister: RateLimitRequestHandler;
   authVerifyEmail: RateLimitRequestHandler;
+  authForgotPassword: RateLimitRequestHandler;
+  authResetPassword: RateLimitRequestHandler;
   generalApi: RateLimitRequestHandler;
 }
 
@@ -79,6 +85,14 @@ export const createRateLimiters = (
     authVerifyEmail: rateLimit({
       ...options,
       limit: overrides.authVerifyEmailMax ?? RATE_LIMIT_AUTH_VERIFY_EMAIL_MAX,
+    }),
+    authForgotPassword: rateLimit({
+      ...options,
+      limit: overrides.authForgotPasswordMax ?? RATE_LIMIT_AUTH_FORGOT_PASSWORD_MAX,
+    }),
+    authResetPassword: rateLimit({
+      ...options,
+      limit: overrides.authResetPasswordMax ?? RATE_LIMIT_AUTH_RESET_PASSWORD_MAX,
     }),
     generalApi: rateLimit({
       ...options,

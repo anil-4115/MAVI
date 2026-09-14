@@ -190,6 +190,42 @@ async function main(): Promise<void> {
   }
 
   // ─────────────────────────────────────────────────────────────────────────
+  // TEST 5b: forgot-password limiter triggers 429
+  // ─────────────────────────────────────────────────────────────────────────
+  {
+    const srv = await startApp({ trustProxyHops: 0, rateLimits: { authForgotPasswordMax: 2 }, logging: false });
+    const statuses = [];
+    for (let i = 0; i < 3; i++) {
+      statuses.push((await request(srv.base, "/auth/forgot-password", { method: "POST", body: {} })).status);
+    }
+    check(
+      JSON.stringify(statuses) === JSON.stringify([400, 400, 429]),
+      `TEST 5b: forgot-password limiter statuses (got ${statuses.join(",")})`,
+    );
+    const blocked = await request(srv.base, "/auth/forgot-password", { method: "POST", body: {} });
+    await expect429Envelope(blocked, "TEST 5b");
+    await srv.close();
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // TEST 5c: reset-password limiter triggers 429
+  // ─────────────────────────────────────────────────────────────────────────
+  {
+    const srv = await startApp({ trustProxyHops: 0, rateLimits: { authResetPasswordMax: 2 }, logging: false });
+    const statuses = [];
+    for (let i = 0; i < 3; i++) {
+      statuses.push((await request(srv.base, "/auth/reset-password", { method: "POST", body: {} })).status);
+    }
+    check(
+      JSON.stringify(statuses) === JSON.stringify([400, 400, 429]),
+      `TEST 5c: reset-password limiter statuses (got ${statuses.join(",")})`,
+    );
+    const blocked = await request(srv.base, "/auth/reset-password", { method: "POST", body: {} });
+    await expect429Envelope(blocked, "TEST 5c");
+    await srv.close();
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────
   // TEST 6: general API limiter triggers 429; health + auth stay unaffected
   // ─────────────────────────────────────────────────────────────────────────
   {

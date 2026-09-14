@@ -12,6 +12,15 @@ export interface LoginPayload {
   password: string;
 }
 
+export interface ForgotPasswordPayload {
+  email: string;
+}
+
+export interface ResetPasswordPayload {
+  token: string;
+  password: string;
+}
+
 interface AuthResponse<T> extends ApiEnvelope<T> {
   success: true;
 }
@@ -47,4 +56,19 @@ export const verifyEmail = async (token: string): Promise<VerifyEmailResponse> =
     params: { token },
   });
   return { emailVerified: response.data.data.emailVerified, message: response.data.message };
+};
+
+/** Returns the backend's generic message; identical for known and unknown emails. */
+export const forgotPassword = async (
+  payload: ForgotPasswordPayload,
+): Promise<string> => {
+  const response = await api.post<AuthResponse<{ ok: true }>>("/auth/forgot-password", payload);
+  return response.data.message;
+};
+
+export const resetPassword = async (
+  payload: ResetPasswordPayload,
+): Promise<string> => {
+  const response = await api.post<AuthResponse<{ ok: true }>>("/auth/reset-password", payload);
+  return response.data.message;
 };

@@ -14,6 +14,15 @@ export interface LoginInput {
   password: string;
 }
 
+export interface ForgotPasswordInput {
+  email: string;
+}
+
+export interface ResetPasswordInput {
+  token: string;
+  password: string;
+}
+
 const getName = (value: unknown): string => {
   if (typeof value !== "string" || value.trim().length < 2 || value.trim().length > 100) {
     throw new ApiError(400, "Name must be between 2 and 100 characters");
@@ -52,4 +61,21 @@ export const validateLogin = (body: unknown): LoginInput => {
     throw new ApiError(400, "Password is required");
   }
   return { email: email.trim().toLowerCase(), password };
+};
+
+const getToken = (value: unknown): string => {
+  if (typeof value !== "string" || value.trim() === "") {
+    throw new ApiError(400, "Reset token is required");
+  }
+  return value.trim();
+};
+
+export const validateForgotPassword = (body: unknown): ForgotPasswordInput => {
+  const { email } = (body ?? {}) as Record<string, unknown>;
+  return { email: getEmail(email) };
+};
+
+export const validateResetPassword = (body: unknown): ResetPasswordInput => {
+  const { token, password } = (body ?? {}) as Record<string, unknown>;
+  return { token: getToken(token), password: getPassword(password) };
 };

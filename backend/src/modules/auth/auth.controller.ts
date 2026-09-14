@@ -2,8 +2,17 @@ import type { Request, Response } from "express";
 import { asyncHandler } from "../../utils/asyncHandler.js";
 import { ApiError } from "../../utils/ApiError.js";
 import { register as registerUser, login as loginUser, getProfileById } from "./auth.service.js";
-import { validateLogin, validateRegistration } from "./auth.validation.js";
+import {
+  validateForgotPassword,
+  validateLogin,
+  validateRegistration,
+  validateResetPassword,
+} from "./auth.validation.js";
 import { verifyEmailToken } from "./verification.service.js";
+import {
+  requestPasswordReset,
+  resetPassword as resetPasswordService,
+} from "./passwordReset.service.js";
 
 export const register = asyncHandler(async (req: Request, res: Response) => {
   const input = validateRegistration(req.body);
@@ -42,6 +51,29 @@ export const verifyEmail = asyncHandler(async (req: Request, res: Response) => {
     success: true,
     message: result.message,
     data: { emailVerified: result.status === "verified" },
+  });
+});
+
+export const forgotPassword = asyncHandler(async (req: Request, res: Response) => {
+  const input = validateForgotPassword(req.body);
+  await requestPasswordReset(input.email);
+
+  // Always the same generic envelope — never reveals whether the account exists.
+  res.status(200).json({
+    success: true,
+    message: "If an account exists with that email, a password reset link has been sent.",
+    data: { ok: true },
+  });
+});
+
+export const resetPassword = asyncHandler(async (req: Request, res: Response) => {
+  const input = validateResetPassword(req.body);
+  await resetPasswordService(input.token, input.password);
+
+  res.status(200).json({
+    success: true,
+    message: "Password reset successful. You can now sign in with your new password.",
+    data: { ok: true },
   });
 });
 

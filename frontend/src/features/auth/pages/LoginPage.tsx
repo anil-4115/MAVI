@@ -101,6 +101,12 @@ export function LoginPage() {
             )}
           </div>
 
+          <div className="auth-forgot-row">
+            <Link to="/forgot-password" className="auth-forgot-link">
+              Forgot password?
+            </Link>
+          </div>
+
           <button className="auth-button" type="submit" disabled={isSubmitting}>
             {isSubmitting ? "Signing in…" : "Sign in"}
           </button>

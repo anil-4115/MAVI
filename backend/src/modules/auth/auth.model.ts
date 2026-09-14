@@ -25,6 +25,13 @@ export interface IUser {
    */
   verifiedTokenHashes: string[];
   /**
+   * SHA-256 hash of the active password-reset token (raw token never stored).
+   * Slotted on the user document so no separate collection is needed.
+   */
+  passwordResetTokenHash: string | null;
+  /** When the active password-reset token stops being valid. */
+  passwordResetTokenExpiresAt: Date | null;
+  /**
    * Consecutive failed login attempts. Reset on successful login.
    * Optional: existing documents created before this field shipped have no
    * value and read as 0.
@@ -62,6 +69,8 @@ const userSchema = new Schema<IUser>(
     verificationTokenExpiresAt: { type: Date, default: null },
     verificationEmailSentAt: { type: Date, default: null },
     verifiedTokenHashes: { type: [String], default: [], select: false },
+    passwordResetTokenHash: { type: String, default: null, select: false, index: true },
+    passwordResetTokenExpiresAt: { type: Date, default: null },
     failedLoginAttempts: { type: Number, default: 0, select: false },
     accountLockedUntil: { type: Date, default: null, select: false },
   },

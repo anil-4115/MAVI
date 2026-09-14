@@ -35,6 +35,17 @@ export const validateLoginPassword = (value: string): string | null => {
   return null;
 };
 
+export const validateResetToken = (value: string): string | null => {
+  const trimmed = value.trim();
+  if (!trimmed) {
+    return "This reset link is missing its token.";
+  }
+  if (trimmed.length > 512) {
+    return "This reset link is invalid.";
+  }
+  return null;
+};
+
 export const validatePassword = (value: string): string | null => {
   if (!value) {
     return "Password is required.";

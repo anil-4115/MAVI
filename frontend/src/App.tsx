@@ -5,6 +5,8 @@ import { GuestRoute, ProtectedRoute } from "./features/auth/ProtectedRoute";
 import { LoginPage } from "./features/auth/pages/LoginPage";
 import { RegisterPage } from "./features/auth/pages/RegisterPage";
 import { VerifyEmailPage } from "./features/auth/pages/VerifyEmailPage";
+import { ForgotPasswordPage } from "./features/auth/pages/ForgotPasswordPage";
+import { ResetPasswordPage } from "./features/auth/pages/ResetPasswordPage";
 import { DashboardPage } from "./features/dashboard/DashboardPage";
 import { ExpensesPage } from "./features/expenses/ExpensesPage";
 import { PersonalExpensesPage } from "./features/expenses/PersonalExpensesPage";
@@ -42,6 +44,16 @@ function AppRoutes() {
       {/* Public on purpose: the email link must work whether or not a session
           exists, and clicking it should never be impossible while logged out. */}
       <Route path="/verify-email" element={<VerifyEmailPage />} />
+      <Route path="/reset-password" element={<ResetPasswordPage />} />
+
+      <Route
+        path="/forgot-password"
+        element={
+          <GuestRoute>
+            <ForgotPasswordPage />
+          </GuestRoute>
+        }
+      />
 
       <Route
         element={

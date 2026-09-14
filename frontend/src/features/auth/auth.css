@@ -228,6 +228,17 @@
   color: var(--accent);
 }
 
+.auth-forgot-row {
+  margin-top: 4px;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.auth-forgot-link {
+  font-size: 14px;
+  color: var(--accent);
+}
+
 @media (max-width: 640px) {
   .auth-card {
     padding: 24px;
