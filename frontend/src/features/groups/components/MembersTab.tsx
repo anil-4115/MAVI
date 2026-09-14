@@ -4,6 +4,7 @@ import { ConfirmDialog } from "../../../components/ui/ConfirmDialog";
 import { EmptyState } from "../../../components/ui/EmptyState";
 import { ErrorState } from "../../../components/ui/ErrorState";
 import { Spinner } from "../../../components/ui/Spinner";
+import { useToast } from "../../../components/ui/Toast";
 import { formatDate } from "../../../lib/format";
 import { getErrorMessage } from "../../../services/api";
 import {
@@ -60,7 +61,7 @@ export function MembersTab({
   const [actionError, setActionError] = useState<string | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [confirm, setConfirm] = useState<ConfirmState | null>(null);
-  const [done, setDone] = useState<string | null>(null);
+  const { addToast } = useToast();
 
   const privileged = isPrivileged(myRole);
   const mine = (member: PublicGroupMember): boolean => member.userId === currentUserId;
@@ -81,10 +82,9 @@ export function MembersTab({
 
   const runAction = async (action: () => Promise<unknown>, successMessage: string) => {
     setActionError(null);
-    setDone(null);
     try {
       await action();
-      setDone(successMessage);
+      addToast(successMessage, "success");
     } catch (actionFailure) {
       setActionError(getErrorMessage(actionFailure));
     }
@@ -179,7 +179,6 @@ export function MembersTab({
       )}
 
       {actionError && <Banner tone="error">{actionError}</Banner>}
-      {done && <Banner tone="success">{done}</Banner>}
 
       <ul className="rows">
         {members.map((member) => {

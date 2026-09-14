@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { useAuth } from "../useAuth";
 import {
   validateConfirmPassword,
@@ -15,7 +15,6 @@ type FieldErrors = Partial<
 
 export function RegisterPage() {
   const { register } = useAuth();
-  const navigate = useNavigate();
 
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -23,6 +22,7 @@ export function RegisterPage() {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
   const [formError, setFormError] = useState<string | null>(null);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleSubmit = async (event: FormEvent) => {
@@ -43,8 +43,9 @@ export function RegisterPage() {
 
     setIsSubmitting(true);
     try {
-      await register({ name, email, password });
-      navigate("/dashboard", { replace: true });
+      // The account must be verified by email before it can sign in.
+      const message = await register({ name, email, password });
+      setSuccessMessage(message);
     } catch (error) {
       setFormError(error instanceof Error ? error.message : "Registration failed. Please try again.");
     } finally {
@@ -52,9 +53,40 @@ export function RegisterPage() {
     }
   };
 
+  if (successMessage) {
+    return (
+      <main className="auth-page">
+        <div className="auth-card">
+          <div className="auth-brand" aria-hidden="true">
+            <span className="auth-brand__mark">M</span>
+            <span className="auth-brand__name">MAVI</span>
+          </div>
+          <h1 className="auth-title">Check your email</h1>
+          <div className="auth-success" role="status">
+            <div className="auth-success__icon" aria-hidden="true">
+              ✓
+            </div>
+            <p className="auth-success__text">{successMessage}</p>
+            <p className="auth-success__hint">
+              We emailed <strong>{email}</strong>. Open the link in that message to activate
+              your account — check your spam folder if it does not arrive shortly.
+            </p>
+          </div>
+          <p className="auth-switch">
+            Already verified? <Link to="/login">Sign in</Link>
+          </p>
+        </div>
+      </main>
+    );
+  }
+
   return (
     <main className="auth-page">
       <div className="auth-card">
+        <div className="auth-brand" aria-hidden="true">
+          <span className="auth-brand__mark">M</span>
+          <span className="auth-brand__name">MAVI</span>
+        </div>
         <h1 className="auth-title">Create your account</h1>
         <p className="auth-subtitle">Join MAVI in seconds</p>
 

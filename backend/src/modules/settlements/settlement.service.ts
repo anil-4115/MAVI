@@ -37,7 +37,8 @@ const getMembership = (group: GroupDocument, userId: string) =>
 const assertActorActive = (group: GroupDocument, actorId: string): void => {
   const member = getMembership(group, actorId);
   if (!member || member.status !== "active") {
-    throw new ApiError(403, "You are not an active member of this group");
+    // 404 (not 403) so callers cannot tell whether the group exists.
+    throw new ApiError(404, "Group not found");
   }
 };
 

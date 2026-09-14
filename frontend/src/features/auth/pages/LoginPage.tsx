@@ -48,6 +48,10 @@ export function LoginPage() {
   return (
     <main className="auth-page">
       <div className="auth-card">
+        <div className="auth-brand" aria-hidden="true">
+          <span className="auth-brand__mark">M</span>
+          <span className="auth-brand__name">MAVI</span>
+        </div>
         <h1 className="auth-title">Welcome back</h1>
         <p className="auth-subtitle">Sign in to your MAVI account</p>
 

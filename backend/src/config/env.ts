@@ -15,20 +15,40 @@ const isMongoUri = (value: string): boolean => /^mongodb(\+srv)?:\/\/.+/.test(va
 const isJwtExpiresIn = (value: string): value is JwtExpiresIn =>
   /^\d+(ms|s|m|h|d)$/.test(value);
 
+const isHttpUrl = (value: string): boolean => /^https?:\/\/\S+(\.\S+|:\d+)\S*$/.test(value);
+
+const isEmail = (value: string): boolean => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
+
+const isResendApiKey = (value: string): boolean => /^re_[A-Za-z0-9_\-]{10,}$/.test(value);
+
+const isTrustProxyHops = (value: string): boolean => /^\d+$/.test(value);
+
+const DEFAULT_DEV_EMAIL_FROM = "onboarding@resend.dev";
+const DEFAULT_DEV_FRONTEND_URL = "http://localhost:5173";
+
 const parseEnv = (): {
   port: number;
   listenHost: string;
   mongoUri: string;
   nodeEnv: NodeEnv;
   isProduction: boolean;
+  trustProxyHops: number;
   jwtSecret: string;
   jwtExpiresIn: JwtExpiresIn;
+  resendApiKey: string;
+  emailFrom: string;
+  frontendUrl: string;
 } => {
   const rawMongoUri = process.env.MONGODB_URI;
   const rawPort = process.env.PORT ?? "5000";
   const nodeEnv = (process.env.NODE_ENV ?? "development") as NodeEnv;
   const rawJwtSecret = process.env.JWT_SECRET;
   const rawJwtExpiresIn = (process.env.JWT_EXPIRES_IN ?? "7d").trim();
+  const rawResendApiKey = (process.env.RESEND_API_KEY ?? "").trim();
+  const rawEmailFrom = (process.env.EMAIL_FROM ?? "").trim();
+  const rawFrontendUrl = (process.env.FRONTEND_URL ?? "").trim();
+  const rawTrustProxyHops = (process.env.TRUST_PROXY_HOPS ?? "0").trim();
+  const isProduction = nodeEnv === "production";
 
   if (!rawMongoUri || rawMongoUri.trim() === "") {
     throw new Error("MONGODB_URI is required (see backend/.env.example)");
@@ -40,6 +60,10 @@ const parseEnv = (): {
 
   if (!isPort(rawPort)) {
     throw new Error(`PORT must be a valid port number, got "${rawPort}"`);
+  }
+
+  if (!isTrustProxyHops(rawTrustProxyHops)) {
+    throw new Error(`TRUST_PROXY_HOPS must be a non-negative integer, got "${rawTrustProxyHops}"`);
   }
 
   if (!VALID_ENVIRONMENTS.includes(nodeEnv)) {
@@ -56,14 +80,30 @@ const parseEnv = (): {
     );
   }
 
+  if (isProduction) {
+    if (!isResendApiKey(rawResendApiKey)) {
+      throw new Error("RESEND_API_KEY is required in production (format: re_...)");
+    }
+    if (!isEmail(rawEmailFrom)) {
+      throw new Error("EMAIL_FROM is required in production and must be a valid sender address");
+    }
+    if (!isHttpUrl(rawFrontendUrl)) {
+      throw new Error("FRONTEND_URL is required in production and must be a valid http(s) URL");
+    }
+  }
+
   return {
     port: Number(rawPort),
     listenHost: nodeEnv === "production" ? "0.0.0.0" : "localhost",
     mongoUri: rawMongoUri,
     nodeEnv,
-    isProduction: nodeEnv === "production",
+    isProduction,
+    trustProxyHops: Number(rawTrustProxyHops),
     jwtSecret: rawJwtSecret.trim(),
     jwtExpiresIn: rawJwtExpiresIn,
+    resendApiKey: rawResendApiKey,
+    emailFrom: rawEmailFrom || (isProduction ? "" : DEFAULT_DEV_EMAIL_FROM),
+    frontendUrl: rawFrontendUrl || (isProduction ? "" : DEFAULT_DEV_FRONTEND_URL),
   };
 };
 

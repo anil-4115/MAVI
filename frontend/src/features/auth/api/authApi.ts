@@ -16,9 +16,15 @@ interface AuthResponse<T> extends ApiEnvelope<T> {
   success: true;
 }
 
-export const register = async (payload: RegisterPayload): Promise<AuthUser> => {
+export interface RegisterResponse {
+  user: AuthUser;
+  /** Backend message reflecting whether the verification email was sent. */
+  message: string;
+}
+
+export const register = async (payload: RegisterPayload): Promise<RegisterResponse> => {
   const response = await api.post<AuthResponse<{ user: AuthUser }>>("/auth/register", payload);
-  return response.data.data.user;
+  return { user: response.data.data.user, message: response.data.message };
 };
 
 export const login = async (payload: LoginPayload): Promise<LoginResponse> => {
@@ -29,4 +35,16 @@ export const login = async (payload: LoginPayload): Promise<LoginResponse> => {
 export const getCurrentUser = async (): Promise<AuthUser> => {
   const response = await api.get<AuthResponse<{ user: AuthUser }>>("/auth/me");
   return response.data.data.user;
+};
+
+export interface VerifyEmailResponse {
+  emailVerified: boolean;
+  message: string;
+}
+
+export const verifyEmail = async (token: string): Promise<VerifyEmailResponse> => {
+  const response = await api.get<AuthResponse<{ emailVerified: boolean }>>("/auth/verify-email", {
+    params: { token },
+  });
+  return { emailVerified: response.data.data.emailVerified, message: response.data.message };
 };

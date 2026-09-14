@@ -1,9 +1,11 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { Banner } from "../../components/ui/Banner";
 import { EmptyState } from "../../components/ui/EmptyState";
 import { ErrorState } from "../../components/ui/ErrorState";
+import { Icon, type IconName } from "../../components/ui/Icon";
 import { Spinner } from "../../components/ui/Spinner";
+import { useToast } from "../../components/ui/Toast";
 import { formatRelativeTime } from "../../lib/format";
 import { getErrorMessage } from "../../services/api";
 import {
@@ -25,6 +27,112 @@ import "./notifications.css";
 
 const PAGE_SIZE = 50;
 
+const TYPE_ICONS: Record<NotificationType, IconName> = {
+  group_invitation: "groups",
+  invitation_accepted: "check",
+  member_removed: "logout",
+  member_left: "logout",
+  role_changed: "settings",
+  ownership_transferred: "user",
+  group_archived: "bell-off",
+  expense_created: "expenses",
+  settlement_recorded: "settlements",
+};
+
+interface TypeFilterMenuProps {
+  value: NotificationType | "all";
+  onChange: (value: NotificationType | "all") => void;
+}
+
+/** Custom dropdown filter (replaces the native-looking type select). */
+function TypeFilterMenu({ value, onChange }: TypeFilterMenuProps) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) {
+      return undefined;
+    }
+    const closeOnOutsideClick = (event: MouseEvent): void => {
+      if (ref.current && !ref.current.contains(event.target as Node)) {
+        setOpen(false);
+      }
+    };
+    const closeOnEscape = (event: KeyboardEvent): void => {
+      if (event.key === "Escape") {
+        setOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", closeOnOutsideClick);
+    document.addEventListener("keydown", closeOnEscape);
+    return () => {
+      document.removeEventListener("mousedown", closeOnOutsideClick);
+      document.removeEventListener("keydown", closeOnEscape);
+    };
+  }, [open]);
+
+  const label = value === "all" ? "All types" : notificationTypeLabel(value);
+
+  return (
+    <div className="type-filter" ref={ref}>
+      <button
+        type="button"
+        className={`type-filter__trigger${open ? " type-filter__trigger--open" : ""}`}
+        aria-haspopup="listbox"
+        aria-expanded={open}
+        onClick={() => setOpen((current) => !current)}
+      >
+        <Icon name="filter" size={15} aria-hidden="true" />
+        <span>{label}</span>
+        <Icon name="chevron-down" size={15} className="type-filter__chevron" aria-hidden="true" />
+      </button>
+
+      {open && (
+        <ul className="type-filter__menu" role="listbox" aria-label="Filter by notification type">
+          <li>
+            <button
+              type="button"
+              role="option"
+              aria-selected={value === "all"}
+              className={`type-filter__option${value === "all" ? " type-filter__option--selected" : ""}`}
+              onClick={() => {
+                onChange("all");
+                setOpen(false);
+              }}
+            >
+              All types
+              {value === "all" && <Icon name="check" size={15} aria-hidden="true" />}
+            </button>
+          </li>
+          {NOTIFICATION_TYPE_LABELS.map((entry) => {
+            const selected = value === entry.type;
+            return (
+              <li key={entry.type}>
+                <button
+                  type="button"
+                  role="option"
+                  aria-selected={selected}
+                  className={`type-filter__option${selected ? " type-filter__option--selected" : ""}`}
+                  onClick={() => {
+                    onChange(entry.type);
+                    setOpen(false);
+                  }}
+                >
+                  <span className="type-filter__option-label">
+                    <Icon name={TYPE_ICONS[entry.type]} size={15} aria-hidden="true" />
+                    {entry.label}
+                  </span>
+                  {selected && <Icon name="check" size={15} aria-hidden="true" />}
+                </button>
+              </li>
+            );
+          })}
+        </ul>
+      )}
+    </div>
+  );
+}
+
 export function NotificationsPage() {
   const { count: unreadTotal, refresh: refreshUnread } = useUnreadCount();
   const [status, setStatus] = useState<NotificationStatusFilter>("all");
@@ -35,8 +143,8 @@ export function NotificationsPage() {
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
-  const [actionDone, setActionDone] = useState<string | null>(null);
   const [reloadKey, setReloadKey] = useState(0);
+  const { addToast } = useToast();
 
   const load = useCallback(
     async (
@@ -58,7 +166,6 @@ export function NotificationsPage() {
     let active = true;
     setIsLoading(true);
     setError(null);
-    setActionDone(null);
     load(status, typeFilter, 1)
       .then((result) => {
         if (active) {
@@ -85,7 +192,6 @@ export function NotificationsPage() {
     const nextPage = Math.floor(items.length / PAGE_SIZE) + 1;
     setIsLoadingMore(true);
     setActionError(null);
-    setActionDone(null);
     try {
       const result = await load(status, typeFilter, nextPage);
       setItems((existing) => [...existing, ...result.items]);
@@ -99,7 +205,6 @@ export function NotificationsPage() {
 
   const handleMarkRead = async (notificationId: string) => {
     setActionError(null);
-    setActionDone(null);
     try {
       const updated = await markNotificationRead(notificationId);
       setItems((existing) =>
@@ -122,7 +227,6 @@ export function NotificationsPage() {
 
   const handleMarkAllRead = async () => {
     setActionError(null);
-    setActionDone(null);
     try {
       const modified = await markAllNotificationsRead();
       setItems((existing) =>
@@ -132,7 +236,10 @@ export function NotificationsPage() {
           readAt: item.readAt ?? new Date().toISOString(),
         })),
       );
-      setActionDone(modified > 0 ? "All notifications marked as read." : "There were no unread notifications to mark.");
+      addToast(
+        modified > 0 ? "All notifications marked as read." : "There were no unread notifications to mark.",
+        "success",
+      );
     } catch (markError) {
       setActionError(getErrorMessage(markError));
     } finally {
@@ -159,11 +266,6 @@ export function NotificationsPage() {
         </div>
       </header>
 
-      {actionDone && (
-        <div className="notifications-banner">
-          <Banner tone="success">{actionDone}</Banner>
-        </div>
-      )}
       {actionError && (
         <div className="notifications-banner">
           <Banner tone="error">{actionError}</Banner>
@@ -185,20 +287,7 @@ export function NotificationsPage() {
             </button>
           ))}
         </div>
-        <label className="notifications-type-filter">
-          <span className="notifications-type-filter__label">Type</span>
-          <select
-            value={typeFilter}
-            onChange={(event) => setTypeFilter(event.target.value as NotificationType | "all")}
-          >
-            <option value="all">All types</option>
-            {NOTIFICATION_TYPE_LABELS.map((entry) => (
-              <option key={entry.type} value={entry.type}>
-                {entry.label}
-              </option>
-            ))}
-          </select>
-        </label>
+        <TypeFilterMenu value={typeFilter} onChange={setTypeFilter} />
       </div>
 
       {error ? (
@@ -208,6 +297,7 @@ export function NotificationsPage() {
       ) : items.length === 0 ? (
         <EmptyState
           title={status === "all" ? "No notifications" : "You're all caught up"}
+          icon="notifications"
           description={
             status === "all"
               ? typeFilter === "all"
@@ -229,6 +319,14 @@ export function NotificationsPage() {
                   key={notification.id}
                   className={`row notification${notification.read ? "" : " notification--unread"}`}
                 >
+                  <span
+                    className={`notification__icon${
+                      notification.read ? "" : " notification__icon--unread"
+                    }`}
+                    aria-hidden="true"
+                  >
+                    <Icon name={TYPE_ICONS[notification.type]} size={16} />
+                  </span>
                   <div className="notification__info">
                     <p className="row__primary">
                       {description.heading}

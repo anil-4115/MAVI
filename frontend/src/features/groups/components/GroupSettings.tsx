@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from "react";
 import { Banner } from "../../../components/ui/Banner";
 import { ConfirmDialog } from "../../../components/ui/ConfirmDialog";
+import { useToast } from "../../../components/ui/Toast";
 import { getErrorMessage } from "../../../services/api";
 import { archiveGroup, updateGroup, type PublicGroup } from "../api/groupsApi";
 import { validateGroupDescription, validateGroupName } from "../lib/validators";
@@ -30,6 +31,7 @@ export function GroupSettings({ group, onSaved, onArchived }: GroupSettingsProps
   const [confirmArchive, setConfirmArchive] = useState(false);
   const [isArchiving, setIsArchiving] = useState(false);
   const [archiveError, setArchiveError] = useState<string | null>(null);
+  const { addToast } = useToast();
 
   if (!canEdit || group.archived) {
     return null;
@@ -62,6 +64,7 @@ export function GroupSettings({ group, onSaved, onArchived }: GroupSettingsProps
         description: description.trim() || undefined,
       });
       setEditing(false);
+      addToast("Group details updated.", "success");
       onSaved(updated);
     } catch (saveError2) {
       setSaveError(getErrorMessage(saveError2));
@@ -75,6 +78,7 @@ export function GroupSettings({ group, onSaved, onArchived }: GroupSettingsProps
     try {
       const archived = await archiveGroup(group.id);
       setConfirmArchive(false);
+      addToast("Group archived. It is now read-only.", "success");
       onArchived(archived);
     } catch (archiveFailure) {
       setArchiveError(getErrorMessage(archiveFailure));

@@ -226,7 +226,7 @@ async function main(): Promise<void> {
 
     /* --------------------------- Test H: removed member ----------------------- */
     await Group.updateOne({ _id: g1 }, { $set: { "members.$[m].status": "declined" } }, { arrayFilters: [{ "m.userId": new Types.ObjectId(bId) }] });
-    await expectApiError(() => createSettlement(g1, bId, settleInput(bId, aId, 10)), 403, "H.removed-cannot-create");
+    await expectApiError(() => createSettlement(g1, bId, settleInput(bId, aId, 10)), 404, "H.removed-cannot-create");
     await expectApiError(() => createSettlement(g1, aId, settleInput(bId, aId, 10)), 400, "H.removed-payer-rejected");
     const historical = await listSettlements(g1, aId, 1, 20, 0, "completed");
     check(historical.items.some((s) => s.payerId === bId), "H.removed-history: B's historical settlements remain visible");

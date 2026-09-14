@@ -44,7 +44,6 @@ export function GroupDetailPage() {
 
   const [group, setGroup] = useState<PublicGroup | null>(null);
   const [invite, setInvite] = useState<GroupInvitePreview | null>(null);
-  const [notice, setNotice] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<TabId>(isTabId(urlTab) ? urlTab : "overview");
   const [reloadKey, setReloadKey] = useState(0);
@@ -85,7 +84,6 @@ export function GroupDetailPage() {
         }
       });
     setError(null);
-    setNotice(null);
     return () => {
       active = false;
     };
@@ -162,18 +160,14 @@ export function GroupDetailPage() {
         </Banner>
       )}
 
-      {notice && <Banner tone="success">{notice}</Banner>}
-
       {showSettings && (
         <GroupSettings
           group={group}
           onSaved={(updated) => {
             setGroup(updated);
-            setNotice("Group details updated.");
           }}
           onArchived={(updated) => {
             setGroup(updated);
-            setNotice("Group archived. It is now read-only for every member.");
           }}
         />
       )}

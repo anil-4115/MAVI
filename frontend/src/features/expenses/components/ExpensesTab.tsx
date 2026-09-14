@@ -1,9 +1,11 @@
 import { useCallback, useEffect, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { Banner } from "../../../components/ui/Banner";
 import { ConfirmDialog } from "../../../components/ui/ConfirmDialog";
 import { EmptyState } from "../../../components/ui/EmptyState";
 import { ErrorState } from "../../../components/ui/ErrorState";
 import { Spinner } from "../../../components/ui/Spinner";
+import { useToast } from "../../../components/ui/Toast";
 import { formatDate, formatDateTime } from "../../../lib/format";
 import { formatMoney } from "../../../lib/money";
 import { getErrorMessage } from "../../../services/api";
@@ -64,7 +66,20 @@ export function ExpensesTab({
   const [voidTarget, setVoidTarget] = useState<PublicExpense | null>(null);
   const [isVoiding, setIsVoiding] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
-  const [done, setDone] = useState<string | null>(null);
+  const { addToast } = useToast();
+
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  /* Deep link `?add=1` (mobile quick-add) auto-opens the create form once. */
+  useEffect(() => {
+    if (searchParams.get("add") === "1" && !creating && !editing) {
+      setCreating(true);
+      const params = new URLSearchParams(searchParams);
+      params.delete("add");
+      const query = params.toString();
+      setSearchParams(query ? `?${query}` : {}, { replace: true });
+    }
+  }, [searchParams, creating, editing, setSearchParams]);
 
   const loadMembers = useCallback(async () => {
     try {
@@ -110,15 +125,16 @@ export function ExpensesTab({
   };
 
   const refresh = useCallback(async () => {
+    const wasEditing = editing !== null;
     setCreating(false);
     setEditing(null);
-    setDone(null);
     setActionError(null);
     setVoidTarget(null);
     setIsVoiding(false);
+    addToast(wasEditing ? "Expense updated." : "Expense added.", "success");
     await Promise.all([loadFirstPage(), loadMembers()]);
     onGroupChanged();
-  }, [loadFirstPage, loadMembers, onGroupChanged]);
+  }, [loadFirstPage, loadMembers, onGroupChanged, editing, addToast]);
 
   const handleDetailToggle = async (expenseId: string) => {
     if (detailId === expenseId) {
@@ -147,7 +163,7 @@ export function ExpensesTab({
       await deleteGroupExpense(groupId, voidTarget.id);
       await loadFirstPage();
       setDetailId(null);
-      setDone("Expense voided. It no longer counts toward balances.");
+      addToast("Expense voided. It no longer counts toward balances.", "success");
       setVoidTarget(null);
       onGroupChanged();
     } catch (voidError) {
@@ -193,7 +209,6 @@ export function ExpensesTab({
   return (
     <div>
       {actionError && <Banner tone="error">{actionError}</Banner>}
-      {done && <Banner tone="success">{done}</Banner>}
 
       {!archived && (
         <div className="members-toolbar">

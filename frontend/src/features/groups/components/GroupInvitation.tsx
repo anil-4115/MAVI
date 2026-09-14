@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Banner } from "../../../components/ui/Banner";
+import { useToast } from "../../../components/ui/Toast";
 import { getErrorMessage } from "../../../services/api";
 import { acceptInvitation, declineInvitation, type GroupInvitePreview } from "../api/groupsApi";
 
@@ -18,6 +19,7 @@ interface GroupInvitationProps {
 export function GroupInvitation({ preview, currentUserId, onAccepted, onDeclined }: GroupInvitationProps) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const { addToast } = useToast();
 
   const respond = async (action: "accept" | "decline") => {
     setBusy(true);
@@ -25,9 +27,11 @@ export function GroupInvitation({ preview, currentUserId, onAccepted, onDeclined
     try {
       if (action === "accept") {
         await acceptInvitation(preview.id, currentUserId);
+        addToast("Invitation accepted. Welcome to the group!", "success");
         onAccepted();
       } else {
         await declineInvitation(preview.id, currentUserId);
+        addToast("Invitation declined.", "success");
         onDeclined();
       }
     } catch (respondError) {

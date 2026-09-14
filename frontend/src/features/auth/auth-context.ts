@@ -7,7 +7,9 @@ export interface AuthContextValue {
   isLoading: boolean;
   isAuthenticated: boolean;
   login: (payload: LoginPayload) => Promise<void>;
-  register: (payload: RegisterPayload) => Promise<void>;
+  /** Creates the account and returns the backend registration message. The
+   *  account is NOT auto-authenticated — it must be email-verified first. */
+  register: (payload: RegisterPayload) => Promise<string>;
   logout: () => void;
 }
 

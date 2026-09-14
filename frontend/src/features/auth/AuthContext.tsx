@@ -58,17 +58,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const register = useCallback(async (payload: RegisterPayload) => {
     try {
-      await registerRequest(payload);
-      // Backend register returns the user without a token. Sign the user in
-      // with the same credentials so the registered account starts with a
-      // persisted session. The password is only sent to the backend (never
-      // logged or stored in the frontend).
-      const { token, user: loggedInUser } = await loginRequest({
-        email: payload.email,
-        password: payload.password,
-      });
-      setToken(token);
-      setUser(loggedInUser);
+      const { message } = await registerRequest(payload);
+      // No auto-login: email verification comes first. Show the signup result.
+      return message;
     } catch (error) {
       throw new Error(getErrorMessage(error));
     }

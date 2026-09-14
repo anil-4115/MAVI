@@ -1,70 +1,259 @@
+/* ==================================================================
+   MAVI design tokens
+   Dark is the primary visual identity; the neutral `:root` carries the
+   dark palette. Light remains fully supported via `data-theme="light"`
+   (Profile → Appearance). Feature styles reference these token names —
+   never hard-code colors.
+   ================================================================== */
+
 :root {
-  --text: #6b6375;
-  --text-h: #08060d;
-  --bg: #fff;
-  --border: #e5e4e7;
-  --accent: #aa3bff;
-  --accent-bg: rgba(170, 59, 255, 0.1);
-  --accent-border: rgba(170, 59, 255, 0.5);
-  --danger: #e5484d;
-  --danger-bg: rgba(229, 72, 77, 0.1);
-  --danger-border: rgba(229, 72, 77, 0.35);
-  --success: #2f9e44;
-  --success-bg: rgba(47, 158, 68, 0.1);
-  --success-border: rgba(47, 158, 68, 0.35);
-  --shadow:
-    rgba(0, 0, 0, 0.1) 0 10px 15px -3px, rgba(0, 0, 0, 0.05) 0 4px 6px -2px;
+  color-scheme: dark;
 
-  --sans: system-ui, 'Segoe UI', Roboto, sans-serif;
-  --heading: system-ui, 'Segoe UI', Roboto, sans-serif;
-  --mono: ui-monospace, Consolas, monospace;
+  /* Brand — MAVI indigo/purple (tuned for dark surfaces) */
+  --accent: #a78bfa;
+  --accent-strong: #c4b5fd;
+  --accent-soft: rgba(167, 139, 250, 0.14);
+  --accent-softer: rgba(167, 139, 250, 0.08);
+  --accent-border: rgba(167, 139, 250, 0.38);
 
-  font: 18px/145% var(--sans);
-  letter-spacing: 0.18px;
-  color-scheme: light dark;
+  /* Semantic */
+  --success: #34d399;
+  --success-bg: rgba(52, 211, 153, 0.13);
+  --success-border: rgba(52, 211, 153, 0.36);
+  --danger: #f87171;
+  --danger-bg: rgba(248, 113, 113, 0.13);
+  --danger-border: rgba(248, 113, 113, 0.36);
+  --warning: #fbbf24;
+  --warning-bg: rgba(251, 191, 36, 0.12);
+  --warning-border: rgba(251, 191, 36, 0.34);
+
+  /* Surfaces & neutrals (dark) */
+  --bg: #0b0a13;
+  --bg-solid: #0e0d18;
+  --surface: #14121e;
+  --surface-2: #1a1827;
+  --surface-3: #211e33;
+  --surface-hover: #1b1828;
+  --transport: transparent;
+  --border: #262339;
+  --border-strong: #3a3653;
+  --text: #a9a4bd;
+  --text-h: #f5f3fc;
+  --muted: #7a7491;
+  --overlay: rgba(5, 4, 11, 0.7);
+  --nav-link: #9791ac;
+  --popover: #1a1827;
+  --accent-glow: rgba(167, 139, 250, 0.45);
+
+  /* Focus ring */
+  --ring: rgba(167, 139, 250, 0.32);
+
+  /* Foreground on solid accent/status fills (dark-ink on the bright dark-mode accents) */
+  --accent-ink: #241240;
+  --danger-ink: #3b080b;
+
+  /* Legacy aliases: older feature styles reference these token names. */
+  --accent-bg: var(--accent-soft);
+  --text-muted: var(--muted);
+  --shadow: var(--shadow-md);
+
+  /* Layout */
+  --sidebar-w: 252px;
+  --content-max: 1180px;
+  --header-h: 64px;
+  --bottom-nav-h: 60px;
+
+  /* Radius */
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 22px;
+  --radius-full: 999px;
+
+  /* Elevation */
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.24), 0 1px 3px rgba(0, 0, 0, 0.28);
+  --shadow-sm-soft: 0 2px 8px -2px rgba(0, 0, 0, 0.3);
+  --shadow-md:
+    0 6px 18px -6px rgba(0, 0, 0, 0.42),
+    0 2px 6px -2px rgba(0, 0, 0, 0.28);
+  --shadow-lg: 0 24px 48px -16px rgba(0, 0, 0, 0.6);
+  --shadow-accent: 0 8px 20px -8px rgba(167, 139, 250, 0.5);
+  --glow: 0 0 0 1px rgba(167, 139, 250, 0.12), 0 10px 34px -12px rgba(139, 92, 246, 0.35);
+
+  /* Typography */
+  --font-sans:
+    "Inter", system-ui, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-mono: ui-monospace, "SF Mono", "Cascadia Mono", Consolas, Menlo, monospace;
+  --fs-xs: 12px;
+  --fs-sm: 13px;
+  --fs-base: 15px;
+  --fs-md: 16px;
+  --fs-lg: 18px;
+  --fs-xl: 22px;
+  --fs-2xl: 28px;
+  --fs-hero: 38px;
+
+  /* Spacing scale */
+  --sp-1: 4px;
+  --sp-2: 8px;
+  --sp-3: 12px;
+  --sp-4: 16px;
+  --sp-5: 20px;
+  --sp-6: 24px;
+  --sp-8: 32px;
+  --sp-10: 40px;
+  --sp-12: 48px;
+
+  /* Motion */
+  --ease: cubic-bezier(0.22, 1, 0.36, 1);
+  --dur: 0.18s;
+
+  font-family: var(--font-sans);
+  font-size: 16px;
+  line-height: 1.5;
   color: var(--text);
   background: var(--bg);
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-
-  @media (max-width: 1024px) {
-    font-size: 16px;
-  }
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --text: #9ca3af;
-    --text-h: #f3f4f6;
-    --bg: #16171d;
-    --border: #2e303a;
-    --accent: #c084fc;
-    --accent-bg: rgba(192, 132, 252, 0.15);
-    --accent-border: rgba(192, 132, 252, 0.5);
-    --danger: #f8595e;
-    --danger-bg: rgba(248, 89, 94, 0.14);
-    --danger-border: rgba(248, 89, 94, 0.4);
-    --success: #4ade80;
-    --success-bg: rgba(74, 222, 128, 0.14);
-    --success-border: rgba(74, 222, 128, 0.4);
-    --shadow:
-      rgba(0, 0, 0, 0.4) 0 10px 15px -3px, rgba(0, 0, 0, 0.25) 0 4px 6px -2px;
-  }
+/* Explicit LIGHT theme (set by Profile → Appearance). Dark stays default. */
+[data-theme="light"] {
+  color-scheme: light;
+
+  --accent: #6d28d9;
+  --accent-strong: #5b21b6;
+  --accent-soft: rgba(109, 40, 217, 0.08);
+  --accent-softer: rgba(109, 40, 217, 0.05);
+  --accent-border: rgba(109, 40, 217, 0.28);
+
+  --success: #0f8a5a;
+  --success-bg: rgba(15, 138, 90, 0.09);
+  --success-border: rgba(15, 138, 90, 0.3);
+  --danger: #d92d20;
+  --danger-bg: rgba(217, 45, 32, 0.08);
+  --danger-border: rgba(217, 45, 32, 0.3);
+  --warning: #b54708;
+  --warning-bg: rgba(181, 71, 8, 0.09);
+  --warning-border: rgba(181, 71, 8, 0.3);
+
+  --bg: #f6f5fa;
+  --bg-solid: #f6f5fa;
+  --surface: #ffffff;
+  --surface-2: #f9f9fc;
+  --surface-3: #f1eff7;
+  --surface-hover: #f1f0f7;
+  --border: #e8e6f0;
+  --border-strong: #d8d5e3;
+  --text: #5c596b;
+  --text-h: #15121f;
+  --muted: #8b88a0;
+  --overlay: rgba(21, 18, 31, 0.5);
+  --nav-link: #4b4860;
+  --popover: #ffffff;
+  --accent-glow: rgba(109, 40, 217, 0.35);
+  --ring: rgba(109, 40, 217, 0.22);
+  --accent-ink: #ffffff;
+  --danger-ink: #ffffff;
+
+  --shadow-sm: 0 1px 2px rgba(21, 18, 31, 0.05), 0 1px 3px rgba(21, 18, 31, 0.06);
+  --shadow-sm-soft: 0 2px 10px -4px rgba(21, 18, 31, 0.08);
+  --shadow-md: 0 6px 16px -6px rgba(21, 18, 31, 0.12), 0 2px 6px -2px rgba(21, 18, 31, 0.07);
+  --shadow-lg: 0 20px 44px -16px rgba(21, 18, 31, 0.28);
+  --shadow-accent: 0 8px 18px -8px rgba(109, 40, 217, 0.45);
+  --glow: 0 0 0 1px rgba(109, 40, 217, 0.08), 0 10px 34px -14px rgba(109, 40, 217, 0.28);
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100svh;
 }
 
 #root {
   min-height: 100svh;
   display: flex;
   flex-direction: column;
-  box-sizing: border-box;
 }
 
-body {
+p,
+h1,
+h2,
+h3,
+h4 {
   margin: 0;
 }
 
-p {
+ul,
+ol {
   margin: 0;
+  padding: 0;
+}
+
+a {
+  color: var(--accent);
+}
+
+img,
+svg {
+  display: block;
+  max-width: 100%;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+  color: inherit;
+}
+
+button {
+  cursor: pointer;
+}
+
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+::selection {
+  background: var(--accent-soft);
+}
+
+/* Respect reduced-motion preferences: collapse animations/transitions. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+@media (max-width: 1024px) {
+  :root {
+    --fs-hero: 32px;
+  }
+}
+
+@media (max-width: 560px) {
+  :root {
+    --fs-hero: 28px;
+  }
 }

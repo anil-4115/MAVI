@@ -5,6 +5,37 @@ export interface IUser {
   name: string;
   email: string;
   passwordHash: string;
+  /**
+   * Whether the email address has been verified. Deliberately has NO schema
+   * default: accounts created before email verification shipped carry
+   * `undefined` here and remain grandfathered (they can keep logging in).
+   * New registrations set it to `false` explicitly.
+   */
+  emailVerified?: boolean;
+  /** SHA-256 hash of the active verification token (raw token is never stored). */
+  verificationTokenHash: string | null;
+  /** When the active verification token stops being valid. */
+  verificationTokenExpiresAt: Date | null;
+  /** When the signup verification email was accepted by the provider. */
+  verificationEmailSentAt: Date | null;
+  /**
+   * SHA-256 hashes of verification tokens that have already been consumed.
+   * Kept so re-clicking a used link returns an idempotent "already verified"
+   * response instead of "invalid", while the active hash is cleared.
+   */
+  verifiedTokenHashes: string[];
+  /**
+   * Consecutive failed login attempts. Reset on successful login.
+   * Optional: existing documents created before this field shipped have no
+   * value and read as 0.
+   */
+  failedLoginAttempts?: number;
+  /**
+   * When the account lockout expires. null/undefined = not locked.
+   * Optional: existing documents created before this field shipped have no
+   * value and read as unlocked.
+   */
+  accountLockedUntil?: Date | null;
 }
 
 export interface IUserMethods {
@@ -26,6 +57,13 @@ const userSchema = new Schema<IUser>(
       index: true,
     },
     passwordHash: { type: String, required: true, select: false },
+    emailVerified: { type: Boolean, select: false },
+    verificationTokenHash: { type: String, default: null, select: false, index: true },
+    verificationTokenExpiresAt: { type: Date, default: null },
+    verificationEmailSentAt: { type: Date, default: null },
+    verifiedTokenHashes: { type: [String], default: [], select: false },
+    failedLoginAttempts: { type: Number, default: 0, select: false },
+    accountLockedUntil: { type: Date, default: null, select: false },
   },
   { timestamps: true, versionKey: false }
 );

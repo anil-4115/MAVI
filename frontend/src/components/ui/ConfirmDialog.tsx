@@ -1,3 +1,5 @@
+import { useEffect, useRef } from "react";
+
 interface ConfirmDialogProps {
   open: boolean;
   title: string;
@@ -26,6 +28,30 @@ export function ConfirmDialog({
   onConfirm,
   onCancel,
 }: ConfirmDialogProps) {
+  const dialogRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) {
+      return undefined;
+    }
+    const previouslyFocused = document.activeElement as HTMLElement | null;
+    const timer = window.setTimeout(() => {
+      dialogRef.current?.focus();
+    }, 0);
+    const handleKeyDown = (event: KeyboardEvent): void => {
+      if (event.key === "Escape" && !busy) {
+        event.preventDefault();
+        onCancel();
+      }
+    };
+    document.addEventListener("keydown", handleKeyDown);
+    return () => {
+      window.clearTimeout(timer);
+      document.removeEventListener("keydown", handleKeyDown);
+      previouslyFocused?.focus();
+    };
+  }, [open, busy, onCancel]);
+
   if (!open) {
     return null;
   }
@@ -42,7 +68,14 @@ export function ConfirmDialog({
         }
       }}
     >
-      <div className="dialog" role="alertdialog" aria-modal="true" aria-label={title}>
+      <div
+        ref={dialogRef}
+        className="dialog"
+        role="alertdialog"
+        aria-modal="true"
+        aria-label={title}
+        tabIndex={-1}
+      >
         <h2 className="dialog__title">{title}</h2>
         {message && <p className="dialog__message">{message}</p>}
         <div className="dialog__actions">

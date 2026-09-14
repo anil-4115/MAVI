@@ -277,7 +277,8 @@ export async function getGroupBalances(groupId: string, actorId: string): Promis
 
   const actorMember = getMembership(group, actorId);
   if (!actorMember || actorMember.status !== "active") {
-    throw new ApiError(403, "You are not an active member of this group");
+    // 404 (not 403) so callers cannot tell whether the group exists.
+    throw new ApiError(404, "Group not found");
   }
 
   const expenses = (await Expense.find({
@@ -319,7 +320,8 @@ export async function getGroupBalances(groupId: string, actorId: string): Promis
 
   const currentUser = members.find((m) => m.userId === actorId);
   if (!currentUser) {
-    throw new ApiError(403, "You are not an active member of this group");
+    // Defense in depth: matches the read-gate above for a non-member caller.
+    throw new ApiError(404, "Group not found");
   }
 
   return {

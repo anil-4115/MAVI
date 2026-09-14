@@ -4,6 +4,7 @@ import { ConfirmDialog } from "../../../components/ui/ConfirmDialog";
 import { EmptyState } from "../../../components/ui/EmptyState";
 import { ErrorState } from "../../../components/ui/ErrorState";
 import { Spinner } from "../../../components/ui/Spinner";
+import { useToast } from "../../../components/ui/Toast";
 import { formatDate } from "../../../lib/format";
 import { formatMoney } from "../../../lib/money";
 import { getErrorMessage } from "../../../services/api";
@@ -48,8 +49,8 @@ export function SettlementsTab({
   const [prefill, setPrefill] = useState<SuggestedSettlement | null>(null);
   const [cancelTarget, setCancelTarget] = useState<PublicSettlement | null>(null);
   const [isCancelling, setIsCancelling] = useState(false);
-  const [actionDone, setActionDone] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
+  const { addToast } = useToast();
 
   const statusFilter = filter === "all" ? undefined : filter;
 
@@ -155,7 +156,7 @@ export function SettlementsTab({
     setFormOpen(false);
     setPrefill(null);
     setActionError(null);
-    setActionDone("Settlement recorded.");
+    addToast("Settlement recorded.", "success");
     refreshAfterMutation();
   };
 
@@ -168,7 +169,7 @@ export function SettlementsTab({
     try {
       await cancelSettlement(groupId, cancelTarget.id);
       setCancelTarget(null);
-      setActionDone("Settlement cancelled.");
+      addToast("Settlement cancelled.", "success");
       refreshAfterMutation();
     } catch (cancelFailure) {
       setActionError(getErrorMessage(cancelFailure));
@@ -190,7 +191,6 @@ export function SettlementsTab({
         </p>
       )}
 
-      {actionDone && <Banner tone="success">{actionDone}</Banner>}
       {actionError && <Banner tone="error">{actionError}</Banner>}
 
       {!archived && (
@@ -248,7 +248,7 @@ export function SettlementsTab({
                     className="btn btn--danger btn--sm"
                     type="button"
                     onClick={() => {
-                      setActionDone(null);
+                      setActionError(null);
                       setCancelTarget(settlement);
                     }}
                   >

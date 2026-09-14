@@ -1,5 +1,6 @@
 import { useState, type FormEvent } from "react";
 import { Banner } from "../../../components/ui/Banner";
+import { useToast } from "../../../components/ui/Toast";
 import { getErrorMessage } from "../../../services/api";
 import { searchUsers, type UserSearchResult } from "../../users/api/usersApi";
 import { inviteMember } from "../api/groupsApi";
@@ -17,6 +18,7 @@ export function InviteMemberForm({ groupId, existingMemberIds, onInvited }: Invi
   const [searching, setSearching] = useState(false);
   const [invitingId, setInvitingId] = useState<string | null>(null);
   const [formError, setFormError] = useState<string | null>(null);
+  const { addToast } = useToast();
 
   const handleSearch = async (event: FormEvent) => {
     event.preventDefault();
@@ -43,6 +45,7 @@ export function InviteMemberForm({ groupId, existingMemberIds, onInvited }: Invi
       await inviteMember(groupId, user.id);
       setQuery("");
       setResults(null);
+      addToast(`Invitation sent to ${user.name}.`, "success");
       onInvited();
     } catch (inviteError) {
       setFormError(getErrorMessage(inviteError));

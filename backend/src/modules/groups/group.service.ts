@@ -93,7 +93,8 @@ const getMembership = (group: GroupDocument, userId: string) =>
 function requireActiveMember(group: GroupDocument, userId: string): GroupMemberInput {
   const member = getMembership(group, userId);
   if (!member || member.status !== "active") {
-    throw new ApiError(403, "You are not an active member of this group");
+    // 404 (not 403) so callers cannot tell whether the group exists.
+    throw new ApiError(404, "Group not found");
   }
   return member;
 }
@@ -159,12 +160,10 @@ export async function getGroupForInvitePreview(groupId: string, viewerId: string
   const group = await findGroupOrThrow(groupId);
   const my = getMembership(group, viewerId);
 
-  if (!my) {
-    throw new ApiError(403, "You are not part of this group");
-  }
-
-  if (my.status !== "invited") {
-    throw new ApiError(403, "You are not invited to this group");
+  // Uniform 404 (whether the group exists, is unknown, or the viewer is not
+  // currently invited) avoids leaking group existence or membership status.
+  if (!my || my.status !== "invited") {
+    throw new ApiError(404, "Invitation not found");
   }
 
   return {
@@ -333,7 +332,8 @@ export async function removeMember(
 
   const self = actorId === targetUserId;
   if (!actor || actor.status !== "active") {
-    throw new ApiError(403, "You are not an active member of this group");
+    // 404 (not 403) so non-members cannot distinguish existing from unknown groups.
+    throw new ApiError(404, "Group not found");
   }
 
   const target = getMembership(group, targetUserId);
@@ -397,7 +397,11 @@ export async function transferOwnership(
   const group = await findGroupOrThrow(groupId);
 
   const actor = getMembership(group, actorId);
-  if (!actor || actor.status !== "active" || actor.role !== "owner") {
+  if (!actor || actor.status !== "active") {
+    // 404 (not 403) so non-members cannot distinguish existing from unknown groups.
+    throw new ApiError(404, "Group not found");
+  }
+  if (actor.role !== "owner") {
     throw new ApiError(403, "Only the current owner can transfer ownership");
   }
 

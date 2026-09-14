@@ -1,4 +1,10 @@
-.group-card__top {
+.group-card {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.group-card__head {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
@@ -7,7 +13,8 @@
 
 .group-card__name {
   font-size: 17px;
-  letter-spacing: -0.2px;
+  font-weight: 750;
+  letter-spacing: -0.02em;
   margin: 0;
   color: var(--text-h);
 }
@@ -15,13 +22,29 @@
 .group-card__description {
   font-size: 14px;
   color: var(--text);
-  margin: 8px 0 0;
+  margin: 0;
 }
 
 .group-card__meta {
-  font-size: 13px;
-  color: var(--text);
-  margin: 12px 0 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: auto;
+  padding-top: 4px;
+}
+
+.group-card__meta-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--muted);
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-full);
+  padding: 4px 10px;
 }
 
 .group-detail__back {

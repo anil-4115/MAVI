@@ -3,15 +3,19 @@ import { asyncHandler } from "../../utils/asyncHandler.js";
 import { ApiError } from "../../utils/ApiError.js";
 import { register as registerUser, login as loginUser, getProfileById } from "./auth.service.js";
 import { validateLogin, validateRegistration } from "./auth.validation.js";
+import { verifyEmailToken } from "./verification.service.js";
 
 export const register = asyncHandler(async (req: Request, res: Response) => {
   const input = validateRegistration(req.body);
-  const user = await registerUser(input);
+  const result = await registerUser(input);
+  const message = result.verificationEmailSent
+    ? "Account created. Check your email to verify your account."
+    : "Account created. We could not send the verification email right now — please try again later.";
 
   res.status(201).json({
     success: true,
-    message: "Account created successfully",
-    data: { user },
+    message,
+    data: { user: result.user },
   });
 });
 
@@ -23,6 +27,21 @@ export const login = asyncHandler(async (req: Request, res: Response) => {
     success: true,
     message: "Login successful",
     data: result,
+  });
+});
+
+export const verifyEmail = asyncHandler(async (req: Request, res: Response) => {
+  const token = typeof req.query.token === "string" ? req.query.token.trim() : "";
+  if (!token) {
+    throw new ApiError(400, "Verification token is required.");
+  }
+
+  const result = await verifyEmailToken(token);
+
+  res.status(200).json({
+    success: true,
+    message: result.message,
+    data: { emailVerified: result.status === "verified" },
   });
 });
 
