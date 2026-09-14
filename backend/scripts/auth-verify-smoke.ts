@@ -96,7 +96,7 @@ async function main(): Promise<void> {
     const reg1 = await registerUser({ name: "Smoke Test 1", email: test1Email, password: PASSWORD });
     check(reg1.user.email === test1Email, "TEST 1: register returns correct email");
     check(reg1.user.emailVerified === false, "TEST 1: register sets emailVerified=false");
-    // Email send failed (no Resend key) → verificationEmailSent should be false
+    // Email send failed (no Brevo key) → verificationEmailSent should be false
     check(reg1.verificationEmailSent === false, "TEST 1: verificationEmailSent=false (no key)");
     t1UserId = reg1.user.id;
     const u1 = await User.findById(t1UserId).select("verificationEmailSentAt verificationTokenHash emailVerified").lean();

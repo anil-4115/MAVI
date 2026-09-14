@@ -1,5 +1,7 @@
 /**
- * Auth/email verification pure self-test — offline, no DB, no Resend.
+ * Auth/email verification pure self-test — offline, no DB, no provider key.
+ * Covers token generation/hashing, expiry, the email template builder, and the
+ * Brevo payload builder (no external request is made).
  *
  *   npx tsx scripts/auth-email-selftest.ts
  */
@@ -11,6 +13,10 @@ import {
   TOKEN_TTL_HOURS,
 } from "../src/modules/auth/token-utils.js";
 import { buildVerificationEmail } from "../src/modules/email/email.template.js";
+import {
+  buildBrevoSmtpEmail,
+  BREVO_SENDER_NAME,
+} from "../src/modules/email/email.brevo.js";
 
 let failures = 0;
 const failuresList: string[] = [];
@@ -85,6 +91,28 @@ const emailExpiry6 = buildVerificationEmail({
   expiryHours: 6,
 });
 check(emailExpiry6.html.includes("6 hours"), "template: custom expiry 6 hours renders");
+
+/* -------------------------------------------------------------------------- */
+/*                    Brevo payload builder (offline, no key)                 */
+/* -------------------------------------------------------------------------- */
+const senderEmail = "sender@example.com";
+const brevoPayload = buildBrevoSmtpEmail(
+  { to: "recipient@example.com", message: email },
+  senderEmail,
+);
+
+check(typeof brevoPayload.sender === "object" && brevoPayload.sender !== null, "brevo: sender object present");
+check(brevoPayload.sender?.name === BREVO_SENDER_NAME, "brevo: sender name is MAVI");
+check(brevoPayload.sender?.email === senderEmail, "brevo: sender email comes from config, not hardcoded");
+check(Array.isArray(brevoPayload.to) && brevoPayload.to[0]?.email === "recipient@example.com", "brevo: recipient email mapped");
+check(brevoPayload.subject === email.subject, "brevo: subject passed through unchanged");
+check(brevoPayload.htmlContent === email.html, "brevo: HTML passed through byte-for-byte");
+check(brevoPayload.textContent === email.text, "brevo: plain text passed through byte-for-byte");
+check(typeof brevoPayload.htmlContent === "string" && brevoPayload.htmlContent.includes(verifyUrl), "brevo: HTML keeps verification URL");
+check(
+  brevoPayload.htmlContent === buildVerificationEmail({ toName: "Alice", verificationUrl: verifyUrl, expiryHours: 24 }).html,
+  "brevo: HTML escaping/security untouched by mapping",
+);
 
 /* -------------------------------------------------------------------------- */
 /*                            Summary & exit code                             */

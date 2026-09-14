@@ -19,11 +19,12 @@ const isHttpUrl = (value: string): boolean => /^https?:\/\/\S+(\.\S+|:\d+)\S*$/.
 
 const isEmail = (value: string): boolean => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
 
-const isResendApiKey = (value: string): boolean => /^re_[A-Za-z0-9_\-]{10,}$/.test(value);
+const isBrevoApiKey = (value: string): boolean => /^xkeysib-[A-Za-z0-9_\-]{10,}$/.test(value);
 
 const isTrustProxyHops = (value: string): boolean => /^\d+$/.test(value);
 
-const DEFAULT_DEV_EMAIL_FROM = "onboarding@resend.dev";
+/** Dev-only fallback used only when EMAIL_FROM is unset outside production. */
+const DEFAULT_DEV_EMAIL_FROM = "no-reply@mavi.local";
 const DEFAULT_DEV_FRONTEND_URL = "http://localhost:5173";
 
 const parseEnv = (): {
@@ -35,6 +36,7 @@ const parseEnv = (): {
   trustProxyHops: number;
   jwtSecret: string;
   jwtExpiresIn: JwtExpiresIn;
+  brevoApiKey: string;
   resendApiKey: string;
   emailFrom: string;
   frontendUrl: string;
@@ -44,6 +46,7 @@ const parseEnv = (): {
   const nodeEnv = (process.env.NODE_ENV ?? "development") as NodeEnv;
   const rawJwtSecret = process.env.JWT_SECRET;
   const rawJwtExpiresIn = (process.env.JWT_EXPIRES_IN ?? "7d").trim();
+  const rawBrevoApiKey = (process.env.BREVO_API_KEY ?? "").trim();
   const rawResendApiKey = (process.env.RESEND_API_KEY ?? "").trim();
   const rawEmailFrom = (process.env.EMAIL_FROM ?? "").trim();
   const rawFrontendUrl = (process.env.FRONTEND_URL ?? "").trim();
@@ -81,8 +84,8 @@ const parseEnv = (): {
   }
 
   if (isProduction) {
-    if (!isResendApiKey(rawResendApiKey)) {
-      throw new Error("RESEND_API_KEY is required in production (format: re_...)");
+    if (!isBrevoApiKey(rawBrevoApiKey)) {
+      throw new Error("BREVO_API_KEY is required in production (format: xkeysib-...)");
     }
     if (!isEmail(rawEmailFrom)) {
       throw new Error("EMAIL_FROM is required in production and must be a valid sender address");
@@ -101,6 +104,7 @@ const parseEnv = (): {
     trustProxyHops: Number(rawTrustProxyHops),
     jwtSecret: rawJwtSecret.trim(),
     jwtExpiresIn: rawJwtExpiresIn,
+    brevoApiKey: rawBrevoApiKey,
     resendApiKey: rawResendApiKey,
     emailFrom: rawEmailFrom || (isProduction ? "" : DEFAULT_DEV_EMAIL_FROM),
     frontendUrl: rawFrontendUrl || (isProduction ? "" : DEFAULT_DEV_FRONTEND_URL),
