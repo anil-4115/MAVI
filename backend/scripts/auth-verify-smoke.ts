@@ -17,6 +17,7 @@ import {
 } from "../src/modules/auth/token-utils.js";
 import { register as registerUser, login as loginUser } from "../src/modules/auth/auth.service.js";
 import { sendSignupEmailOnce, verifyEmailToken } from "../src/modules/auth/verification.service.js";
+import { env } from "../src/config/env.js";
 import type { SendEmailInput } from "../src/modules/email/email.types.js";
 
 const BASE = "http://localhost:5000/api";
@@ -96,13 +97,22 @@ async function main(): Promise<void> {
     const reg1 = await registerUser({ name: "Smoke Test 1", email: test1Email, password: PASSWORD });
     check(reg1.user.email === test1Email, "TEST 1: register returns correct email");
     check(reg1.user.emailVerified === false, "TEST 1: register sets emailVerified=false");
-    // Email send failed (no Brevo key) → verificationEmailSent should be false
-    check(reg1.verificationEmailSent === false, "TEST 1: verificationEmailSent=false (no key)");
+    // With a configured provider the real send is attempted (and succeeds when
+    // the provider accepts); without one the send fails and must not topple
+    // registration. Assert whichever branch the environment is in.
+    const emailProvided = Boolean(env.brevoApiKey || env.resendApiKey);
+    check(
+      reg1.verificationEmailSent === emailProvided,
+      `TEST 1: verificationEmailSent matches provider presence (got ${reg1.verificationEmailSent}, provider=${emailProvided})`,
+    );
     t1UserId = reg1.user.id;
     const u1 = await User.findById(t1UserId).select("verificationEmailSentAt verificationTokenHash emailVerified").lean();
     check(!!u1, "TEST 1: user persisted");
     check(u1!.emailVerified === false, "TEST 1: emailVerified stored as false");
-    check(u1!.verificationEmailSentAt === null, "TEST 1: sentAt null (send failed)");
+    check(
+      emailProvided ? u1!.verificationEmailSentAt !== null : u1!.verificationEmailSentAt === null,
+      `TEST 1: sentAt matches provider result (got ${emailProvided ? "accepted" : "null"})`,
+    );
     check(typeof u1!.verificationTokenHash === "string", "TEST 1: token hash stored");
   } catch (err) {
     check(false, `TEST 1: register threw ${err instanceof Error ? err.message : String(err)}`);
