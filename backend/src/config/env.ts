@@ -1,4 +1,5 @@
 import "dotenv/config";
+import { DEFAULT_MAX_ATTACHMENT_BYTES } from "../modules/expenses/attachment.validation.js";
 
 const VALID_ENVIRONMENTS = ["development", "production", "test"] as const;
 type NodeEnv = (typeof VALID_ENVIRONMENTS)[number];
@@ -23,6 +24,8 @@ const isBrevoApiKey = (value: string): boolean => /^xkeysib-[A-Za-z0-9_\-]{10,}$
 
 const isTrustProxyHops = (value: string): boolean => /^\d+$/.test(value);
 
+const isPositiveIntegerString = (value: string): boolean => /^\d+$/.test(value) && Number(value) > 0;
+
 /** Dev-only fallback used only when EMAIL_FROM is unset outside production. */
 const DEFAULT_DEV_EMAIL_FROM = "no-reply@mavi.local";
 const DEFAULT_DEV_FRONTEND_URL = "http://localhost:5173";
@@ -40,6 +43,8 @@ const parseEnv = (): {
   resendApiKey: string;
   emailFrom: string;
   frontendUrl: string;
+  /** Max receipt attachment size in bytes. Optional; defaults to 5 MB. */
+  maxAttachmentBytes: number;
 } => {
   const rawMongoUri = process.env.MONGODB_URI;
   const rawPort = process.env.PORT ?? "5000";
@@ -51,6 +56,7 @@ const parseEnv = (): {
   const rawEmailFrom = (process.env.EMAIL_FROM ?? "").trim();
   const rawFrontendUrl = (process.env.FRONTEND_URL ?? "").trim();
   const rawTrustProxyHops = (process.env.TRUST_PROXY_HOPS ?? "0").trim();
+  const rawMaxAttachmentBytes = (process.env.ATTACHMENT_MAX_BYTES ?? "").trim();
   const isProduction = nodeEnv === "production";
 
   if (!rawMongoUri || rawMongoUri.trim() === "") {
@@ -68,6 +74,16 @@ const parseEnv = (): {
   if (!isTrustProxyHops(rawTrustProxyHops)) {
     throw new Error(`TRUST_PROXY_HOPS must be a non-negative integer, got "${rawTrustProxyHops}"`);
   }
+
+  const maxAttachmentBytes =
+    rawMaxAttachmentBytes === ""
+      ? DEFAULT_MAX_ATTACHMENT_BYTES
+      : (() => {
+          if (!isPositiveIntegerString(rawMaxAttachmentBytes)) {
+            throw new Error("ATTACHMENT_MAX_BYTES must be a positive integer (bytes) when set");
+          }
+          return Number(rawMaxAttachmentBytes);
+        })();
 
   if (!VALID_ENVIRONMENTS.includes(nodeEnv)) {
     throw new Error(`NODE_ENV must be one of ${VALID_ENVIRONMENTS.join(", ")}`);
@@ -108,6 +124,7 @@ const parseEnv = (): {
     resendApiKey: rawResendApiKey,
     emailFrom: rawEmailFrom || (isProduction ? "" : DEFAULT_DEV_EMAIL_FROM),
     frontendUrl: rawFrontendUrl || (isProduction ? "" : DEFAULT_DEV_FRONTEND_URL),
+    maxAttachmentBytes,
   };
 };
 

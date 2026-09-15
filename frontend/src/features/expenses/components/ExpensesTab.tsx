@@ -11,13 +11,17 @@ import { formatMoney } from "../../../lib/money";
 import { getErrorMessage } from "../../../services/api";
 import { listGroupMembers, type GroupRole } from "../../groups/api/groupsApi";
 import {
+  deleteGroupAttachment,
   deleteGroupExpense,
+  getGroupAttachment,
   getGroupExpense,
   listGroupExpenses,
+  uploadGroupAttachment,
   type PublicExpense,
   type SplitMethod,
 } from "../api/expensesApi";
 import { ExpenseForm } from "./ExpenseForm";
+import { ReceiptAttachment } from "./ReceiptAttachment";
 
 const PAGE_SIZE = 20;
 
@@ -136,6 +140,11 @@ export function ExpensesTab({
     onGroupChanged();
   }, [loadFirstPage, loadMembers, onGroupChanged, editing, addToast]);
 
+  const updateDetailCache = useCallback((expenseId: string, updated: PublicExpense) => {
+    setDetailCache((current) => ({ ...current, [expenseId]: updated }));
+    setExpenses((current) => current.map((item) => (item.id === expenseId ? { ...item, attachment: updated.attachment } : item)));
+  }, []);
+
   const handleDetailToggle = async (expenseId: string) => {
     if (detailId === expenseId) {
       setDetailId(null);
@@ -247,6 +256,7 @@ export function ExpensesTab({
                     <p className="row__meta expense-row__amount">
                       {formatMoney(expense.amountMinor, expense.currency)}
                       <span className="badge badge--muted">{SPLIT_LABELS[expense.splitMethod] ?? expense.splitMethod}</span>
+                      {expense.attachment && <span className="badge badge--accent">Receipt</span>}
                     </p>
                   </button>
 
@@ -283,6 +293,23 @@ export function ExpensesTab({
                                 </li>
                               ))}
                             </ul>
+                          </div>
+
+                          <div className="expense-row__receipt">
+                            <p className="form-hint">Receipt</p>
+                            <ReceiptAttachment
+                              attachment={detail.attachment}
+                              canModify={canModify(detail)}
+                              getBlob={() => getGroupAttachment(groupId, detail.id)}
+                              onUpload={async (file) => {
+                                const updated = await uploadGroupAttachment(groupId, detail.id, file);
+                                updateDetailCache(detail.id, updated);
+                              }}
+                              onRemove={async () => {
+                                const updated = await deleteGroupAttachment(groupId, detail.id);
+                                updateDetailCache(detail.id, updated);
+                              }}
+                            />
                           </div>
 
                           {canModify(detail) && (

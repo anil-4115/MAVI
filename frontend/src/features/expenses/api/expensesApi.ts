@@ -1,6 +1,15 @@
 import type { ApiEnvelope, PaginatedResult } from "../../../lib/types";
 import api from "../../../services/api";
 
+/** Safe serialized receipt attachment metadata (mirrors backend PublicExpenseAttachment). */
+export interface PublicExpenseAttachment {
+  fileId: string;
+  filename: string;
+  mimeType: string;
+  sizeBytes: number;
+  uploadedAt: string;
+}
+
 /**
  * Group expense contract (backend/src/modules/expenses/* and the H.4 splitting
  * engine). All *Minor values are integer minor units (paise) — the backend is
@@ -60,6 +69,7 @@ export interface PublicExpense {
   splitMethod: SplitMethod;
   splitInput: unknown | null;
   participantShares: PublicExpenseParticipantShare[];
+  attachment: PublicExpenseAttachment | null;
   voided: boolean;
   voidedAt: string | null;
   createdAt: string;
@@ -179,4 +189,81 @@ export const updatePersonalExpense = async (
 /** Soft-delete: voids the personal expense; it drops out of the list. */
 export const deletePersonalExpense = async (expenseId: string): Promise<void> => {
   await api.delete<ApiEnvelope<null>>(`/expenses/personal/${expenseId}`);
+};
+
+/*
+ * Receipt attachments (backend I.8). One optional receipt per expense, stored
+ * in GridFS bucket `expense-attachments`. Binary is served only through these
+ * authenticated endpoints (never public URLs). Upload replaces any existing
+ * receipt; the old GridFS file is deleted server-side.
+ */
+
+const attachmentData = (response: { data: { data: { expense: PublicExpense } } }): PublicExpense =>
+  response.data.data.expense;
+
+/** Upload a receipt for a group expense; replaces any existing one. */
+export const uploadGroupAttachment = async (
+  groupId: string,
+  expenseId: string,
+  file: File
+): Promise<PublicExpense> => {
+  const formData = new FormData();
+  formData.append("attachment", file);
+  const response = await api.post<ApiEnvelope<{ expense: PublicExpense }>>(
+    `/groups/${groupId}/expenses/${expenseId}/attachment`,
+    formData
+  );
+  return attachmentData(response);
+};
+
+/** Fetch a group expense receipt as a Blob (authenticated stream). */
+export const getGroupAttachment = async (
+  groupId: string,
+  expenseId: string
+): Promise<Blob> => {
+  const response = await api.get<Blob>(`/groups/${groupId}/expenses/${expenseId}/attachment`, {
+    responseType: "blob",
+  });
+  return response.data;
+};
+
+/** Remove the receipt from a group expense; the stored file is deleted. */
+export const deleteGroupAttachment = async (
+  groupId: string,
+  expenseId: string
+): Promise<PublicExpense> => {
+  const response = await api.delete<ApiEnvelope<{ expense: PublicExpense }>>(
+    `/groups/${groupId}/expenses/${expenseId}/attachment`
+  );
+  return attachmentData(response);
+};
+
+/** Upload a receipt for a personal expense; replaces any existing one. */
+export const uploadPersonalAttachment = async (
+  expenseId: string,
+  file: File
+): Promise<PublicExpense> => {
+  const formData = new FormData();
+  formData.append("attachment", file);
+  const response = await api.post<ApiEnvelope<{ expense: PublicExpense }>>(
+    `/expenses/personal/${expenseId}/attachment`,
+    formData
+  );
+  return attachmentData(response);
+};
+
+/** Fetch a personal expense receipt as a Blob (authenticated stream). */
+export const getPersonalAttachment = async (expenseId: string): Promise<Blob> => {
+  const response = await api.get<Blob>(`/expenses/personal/${expenseId}/attachment`, {
+    responseType: "blob",
+  });
+  return response.data;
+};
+
+/** Remove the receipt from a personal expense; the stored file is deleted. */
+export const deletePersonalAttachment = async (expenseId: string): Promise<PublicExpense> => {
+  const response = await api.delete<ApiEnvelope<{ expense: PublicExpense }>>(
+    `/expenses/personal/${expenseId}/attachment`
+  );
+  return attachmentData(response);
 };

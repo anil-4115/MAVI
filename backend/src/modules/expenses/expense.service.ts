@@ -4,9 +4,10 @@ import { Group, type GroupDocument } from "../groups/group.model.js";
 import { calculateShares } from "../splitting/splitting.js";
 import type { SplitRequest, SplitShare } from "../splitting/splitting.types.js";
 import { SplitValidationError } from "../splitting/splitting.types.js";
-import { Expense, type ExpenseDocument } from "./expense.model.js";
+import { Expense, type ExpenseDocument, type IExpenseAttachment } from "./expense.model.js";
 import { notify, onExpenseCreated } from "../notifications/notification.service.js";
-import type { PublicExpense } from "./expense.types.js";
+import type { PublicExpense, PublicExpenseAttachment } from "./expense.types.js";
+import { deleteImage, type StoredAttachment } from "./attachment.service.js";
 import {
   getParticipantUserIds,
   validateSplitPayload,
@@ -15,6 +16,22 @@ import {
   type UpdateExpenseInput,
   type UpdatePersonalExpenseInput,
 } from "./expense.validation.js";
+
+const toPublicAttachment = (attachment: IExpenseAttachment): PublicExpenseAttachment => ({
+  fileId: attachment.fileId.toString(),
+  filename: attachment.filename,
+  mimeType: attachment.mimeType,
+  sizeBytes: attachment.sizeBytes,
+  uploadedAt: (attachment.uploadedAt instanceof Date ? attachment.uploadedAt : new Date(attachment.uploadedAt)).toISOString(),
+});
+
+const toExpenseAttachmentDoc = (stored: StoredAttachment): IExpenseAttachment => ({
+  fileId: new Types.ObjectId(stored.fileId),
+  filename: stored.filename,
+  mimeType: stored.mimeType,
+  sizeBytes: stored.sizeBytes,
+  uploadedAt: stored.uploadedAt,
+});
 
 const toPublicExpense = (expense: ExpenseDocument): PublicExpense => ({
   id: expense._id.toString(),
@@ -31,6 +48,7 @@ const toPublicExpense = (expense: ExpenseDocument): PublicExpense => ({
     userId: s.userId.toString(),
     amountMinor: s.amountMinor,
   })),
+  attachment: expense.attachment ? toPublicAttachment(expense.attachment) : null,
   voided: expense.voided ?? false,
   voidedAt: expense.voidedAt ? expense.voidedAt.toISOString() : null,
   createdAt: expense.createdAt.toISOString(),
@@ -135,6 +153,116 @@ const findPersonalExpenseOrThrow = async (ownerId: string, expenseId: string): P
   }
   return expense as unknown as ExpenseDocument;
 };
+
+/* ---------------------------- attachment access --------------------------- */
+
+export type AttachmentAccessMode = "read" | "write";
+
+/**
+ * Resolve a group expense for attachment access using the SAME authorization
+ * rules as the rest of the expense module:
+ * - read:  active group member only (uniform 404)
+ * - write: creator-or-owner + group not archived
+ */
+export async function authorizeGroupAttachment(
+  groupId: string,
+  expenseId: string,
+  actorId: string,
+  mode: AttachmentAccessMode,
+): Promise<{ group: GroupDocument; expense: ExpenseDocument }> {
+  const group = await findGroupOrThrow(groupId);
+  if (mode === "read") {
+    assertActorActive(group, actorId);
+  } else {
+    ensureWritable(group);
+  }
+  const expense = await findGroupExpenseOrThrow(groupId, expenseId);
+  if (mode === "write") {
+    assertCanModifyExpense(group, expense, actorId);
+  }
+  return { group, expense };
+}
+
+/** Personal expenses are owner-only for every attachment operation. */
+export async function authorizePersonalAttachment(ownerId: string, expenseId: string): Promise<ExpenseDocument> {
+  return findPersonalExpenseOrThrow(ownerId, expenseId);
+}
+
+/** Delete a stored GridFS file best-effort; never blocks the primary mutation. */
+const deleteStoredFile = async (fileId: string): Promise<void> => {
+  try {
+    await deleteImage(fileId);
+  } catch (err) {
+    console.error(`Failed to clean up attachment file ${fileId}:`, err instanceof Error ? err.message : err);
+  }
+};
+
+export async function setGroupAttachment(
+  groupId: string,
+  expenseId: string,
+  actorId: string,
+  stored: StoredAttachment,
+): Promise<PublicExpense> {
+  const { expense } = await authorizeGroupAttachment(groupId, expenseId, actorId, "write");
+  const previousFileId = expense.attachment ? expense.attachment.fileId.toString() : null;
+
+  expense.attachment = toExpenseAttachmentDoc(stored);
+  await expense.save();
+
+  if (previousFileId) {
+    await deleteStoredFile(previousFileId);
+  }
+  return toPublicExpense(expense);
+}
+
+export async function removeGroupAttachment(
+  groupId: string,
+  expenseId: string,
+  actorId: string,
+): Promise<PublicExpense> {
+  const { expense } = await authorizeGroupAttachment(groupId, expenseId, actorId, "write");
+  const fileId = expense.attachment ? expense.attachment.fileId.toString() : null;
+  if (!fileId) {
+    throw new ApiError(404, "Attachment not found");
+  }
+
+  expense.attachment = null;
+  await expense.save();
+
+  await deleteStoredFile(fileId);
+  return toPublicExpense(expense);
+}
+
+export async function setPersonalAttachment(
+  ownerId: string,
+  expenseId: string,
+  stored: StoredAttachment,
+): Promise<PublicExpense> {
+  const expense = await authorizePersonalAttachment(ownerId, expenseId);
+  const previousFileId = expense.attachment ? expense.attachment.fileId.toString() : null;
+
+  expense.attachment = toExpenseAttachmentDoc(stored);
+  await expense.save();
+
+  if (previousFileId) {
+    await deleteStoredFile(previousFileId);
+  }
+  return toPublicExpense(expense);
+}
+
+export async function removePersonalAttachment(ownerId: string, expenseId: string): Promise<PublicExpense> {
+  const expense = await authorizePersonalAttachment(ownerId, expenseId);
+  const fileId = expense.attachment ? expense.attachment.fileId.toString() : null;
+  if (!fileId) {
+    throw new ApiError(404, "Attachment not found");
+  }
+
+  expense.attachment = null;
+  await expense.save();
+
+  await deleteStoredFile(fileId);
+  return toPublicExpense(expense);
+}
 
 /* ------------------------------ group expenses ---------------------------- */
 
@@ -265,10 +393,19 @@ export async function deleteGroupExpense(groupId: string, expenseId: string, act
   const expense = await findGroupExpenseOrThrow(groupId, expenseId);
   assertCanModifyExpense(group, expense, actorId);
 
+  const attachmentFileId = expense.attachment ? expense.attachment.fileId.toString() : null;
   expense.voided = true;
   expense.voidedAt = new Date();
   expense.voidedBy = new Types.ObjectId(actorId);
+  if (attachmentFileId) {
+    // The expense record stays (financial history), but its receipt must not.
+    expense.attachment = null;
+  }
   await expense.save();
+
+  if (attachmentFileId) {
+    await deleteStoredFile(attachmentFileId);
+  }
 }
 
 /* ---------------------------- personal expenses --------------------------- */
@@ -358,8 +495,16 @@ export async function updatePersonalExpense(
 export async function deletePersonalExpense(ownerId: string, expenseId: string): Promise<void> {
   const expense = await findPersonalExpenseOrThrow(ownerId, expenseId);
 
+  const attachmentFileId = expense.attachment ? expense.attachment.fileId.toString() : null;
   expense.voided = true;
   expense.voidedAt = new Date();
   expense.voidedBy = new Types.ObjectId(ownerId);
+  if (attachmentFileId) {
+    expense.attachment = null;
+  }
   await expense.save();
+
+  if (attachmentFileId) {
+    await deleteStoredFile(attachmentFileId);
+  }
 }

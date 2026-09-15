@@ -4,10 +4,14 @@ import { formatMoney } from "../../../lib/money";
 import { getErrorMessage } from "../../../services/api";
 import {
   createGroupExpense,
+  deleteGroupAttachment,
+  getGroupAttachment,
   updateGroupExpense,
+  uploadGroupAttachment,
   type CreateExpensePayload,
   type ItemwiseItemInput,
   type PublicExpense,
+  type PublicExpenseAttachment,
   type SplitMethod,
   type SplitPayload,
 } from "../api/expensesApi";
@@ -18,6 +22,7 @@ import {
   todayDateInputValue,
   toDateInputValue,
 } from "../lib/input";
+import { ReceiptAttachment } from "./ReceiptAttachment";
 
 interface ActiveMember {
   userId: string;
@@ -183,6 +188,14 @@ export function ExpenseForm({
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
+
+  /*
+   * Receipt attachment state. In create mode there is no expense id yet, so a
+   * picked file is held as `pendingFile` and uploaded only after the expense is
+   * created. In edit mode the existing attachment is managed directly.
+   */
+  const [attachment, setAttachment] = useState<PublicExpenseAttachment | null>(initial?.attachment ?? null);
+  const [pendingFile, setPendingFile] = useState<File | null>(null);
 
   const memberName = (userId: string): string =>
     members.find((member) => member.userId === userId)?.name ?? "Member";
@@ -449,7 +462,14 @@ export function ExpenseForm({
           { title: buildPayload().title, amountMinor: buildPayload().amountMinor, expenseDate: buildPayload().expenseDate, payerId, split: buildSplit() },
         );
       } else {
-        await createGroupExpense(groupId, buildPayload());
+        const created = await createGroupExpense(groupId, buildPayload());
+        if (pendingFile) {
+          try {
+            await uploadGroupAttachment(groupId, created.id, pendingFile);
+          } catch {
+            // Best-effort: an optional receipt must never fail the expense save.
+          }
+        }
       }
       onCompleted();
     } catch (submitFailure) {
@@ -756,6 +776,32 @@ export function ExpenseForm({
         </div>
 
         {renderSplitEditor()}
+
+        <div className="receipt-block">
+          <p className="form-hint">Receipt (optional)</p>
+          {initial ? (
+            <ReceiptAttachment
+              attachment={attachment}
+              canModify={!archived}
+              getBlob={() => getGroupAttachment(groupId, initial.id)}
+              onUpload={async (file) => {
+                const updated = await uploadGroupAttachment(groupId, initial.id, file);
+                setAttachment(updated.attachment);
+              }}
+              onRemove={async () => {
+                const updated = await deleteGroupAttachment(groupId, initial.id);
+                setAttachment(updated.attachment);
+              }}
+            />
+          ) : (
+            <ReceiptAttachment
+              attachment={null}
+              canModify={!archived}
+              pendingFile={pendingFile}
+              onPendingFileChange={setPendingFile}
+            />
+          )}
+        </div>
 
         <div className="form__actions">
           <button className="btn" type="submit" disabled={isSaving}>

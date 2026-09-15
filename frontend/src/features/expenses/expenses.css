@@ -245,6 +245,76 @@
   margin-top: 16px;
 }
 
+/* ---------- Receipt attachment (shared) ---------- */
+
+.receipt-block {
+  margin-top: 2px;
+}
+
+.receipt-field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px;
+  border: 1px dashed var(--border);
+  border-radius: 12px;
+  background: var(--bg);
+}
+
+.receipt-field__preview {
+  width: 100%;
+  max-width: 320px;
+  max-height: 240px;
+  object-fit: contain;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+}
+
+.receipt-field__preview--missing,
+.receipt-field__preview--loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 96px;
+}
+
+.receipt-field__preview--missing {
+  color: var(--text);
+  font-size: 13px;
+}
+
+.receipt-field__name {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-h);
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.receipt-field__meta {
+  font-size: 12px;
+  color: var(--text);
+  margin: 0;
+}
+
+.receipt-field__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+/* Personal list row embedded receipt stays compact. */
+.personal-expense__receipt {
+  margin-top: 10px;
+  max-width: 320px;
+}
+
+.expense-row__receipt {
+  margin: 16px 0 0;
+  max-width: 360px;
+}
+
 @media (max-width: 640px) {
   .expense-form__row {
     grid-template-columns: 1fr;

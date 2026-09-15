@@ -3,8 +3,12 @@ import { Banner } from "../../../components/ui/Banner";
 import { getErrorMessage } from "../../../services/api";
 import {
   createPersonalExpense,
+  deletePersonalAttachment,
+  getPersonalAttachment,
   updatePersonalExpense,
+  uploadPersonalAttachment,
   type PublicExpense,
+  type PublicExpenseAttachment,
 } from "../api/expensesApi";
 import {
   fromDateInputValue,
@@ -13,6 +17,7 @@ import {
   todayDateInputValue,
   toDateInputValue,
 } from "../lib/input";
+import { ReceiptAttachment } from "./ReceiptAttachment";
 
 interface FieldErrors {
   title?: string | null;
@@ -41,6 +46,9 @@ export function PersonalExpenseForm({ initial, onCompleted, onCancel }: Personal
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
+
+  const [attachment, setAttachment] = useState<PublicExpenseAttachment | null>(initial?.attachment ?? null);
+  const [pendingFile, setPendingFile] = useState<File | null>(null);
 
   const amountMinor = parseRupeesToMinor(amountText);
 
@@ -76,7 +84,14 @@ export function PersonalExpenseForm({ initial, onCompleted, onCancel }: Personal
       if (initial) {
         await updatePersonalExpense(initial.id, payload);
       } else {
-        await createPersonalExpense(payload);
+        const created = await createPersonalExpense(payload);
+        if (pendingFile) {
+          try {
+            await uploadPersonalAttachment(created.id, pendingFile);
+          } catch {
+            // Best-effort: an optional receipt must never fail the expense save.
+          }
+        }
       }
       onCompleted();
     } catch (submitFailure) {
@@ -130,6 +145,32 @@ export function PersonalExpenseForm({ initial, onCompleted, onCancel }: Personal
         </div>
 
         <p className="form-hint">Personal expenses are yours alone and aren&apos;t split with a group.</p>
+
+        <div className="receipt-block">
+          <p className="form-hint">Receipt (optional)</p>
+          {initial ? (
+            <ReceiptAttachment
+              attachment={attachment}
+              canModify
+              getBlob={() => getPersonalAttachment(initial.id)}
+              onUpload={async (file) => {
+                const updated = await uploadPersonalAttachment(initial.id, file);
+                setAttachment(updated.attachment);
+              }}
+              onRemove={async () => {
+                const updated = await deletePersonalAttachment(initial.id);
+                setAttachment(updated.attachment);
+              }}
+            />
+          ) : (
+            <ReceiptAttachment
+              attachment={null}
+              canModify
+              pendingFile={pendingFile}
+              onPendingFileChange={setPendingFile}
+            />
+          )}
+        </div>
 
         <div className="form__actions">
           <button className="btn" type="submit" disabled={isSaving}>

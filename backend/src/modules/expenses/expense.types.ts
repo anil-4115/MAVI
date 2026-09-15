@@ -13,6 +13,19 @@ export interface PublicExpenseParticipantShare {
   amountMinor: number;
 }
 
+/**
+ * Safe, serialized metadata for the single optional receipt attachment.
+ * Never contains file contents — binary is served only through dedicated,
+ * authenticate-gated attachment endpoints.
+ */
+export interface PublicExpenseAttachment {
+  fileId: string;
+  filename: string;
+  mimeType: string;
+  sizeBytes: number;
+  uploadedAt: string;
+}
+
 /** Safe, serialized expense. Never includes sensitive fields. */
 export interface PublicExpense {
   id: string;
@@ -26,6 +39,7 @@ export interface PublicExpense {
   splitMethod: SplitMethod;
   splitInput: SplitRequest | null;
   participantShares: PublicExpenseParticipantShare[];
+  attachment: PublicExpenseAttachment | null;
   voided: boolean;
   voidedAt: string | null;
   createdAt: string;
