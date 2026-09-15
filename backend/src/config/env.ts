@@ -43,7 +43,7 @@ const parseEnv = (): {
   resendApiKey: string;
   emailFrom: string;
   frontendUrl: string;
-  /** Max receipt attachment size in bytes. Optional; defaults to 5 MB. */
+  /** Max receipt attachment size in bytes. Optional; defaults to 2 MB. */
   maxAttachmentBytes: number;
 } => {
   const rawMongoUri = process.env.MONGODB_URI;

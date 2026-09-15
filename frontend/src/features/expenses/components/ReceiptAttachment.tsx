@@ -1,11 +1,13 @@
 import { useEffect, useRef, useState, type ChangeEvent } from "react";
 import { Banner } from "../../../components/ui/Banner";
+import { ConfirmDialog } from "../../../components/ui/ConfirmDialog";
 import { Spinner } from "../../../components/ui/Spinner";
+import { useToast } from "../../../components/ui/Toast";
 import { getErrorMessage } from "../../../services/api";
 import type { PublicExpenseAttachment } from "../api/expensesApi";
 
 const ACCEPT_TYPES = "image/jpeg,image/png,image/webp";
-const MAX_BYTES = 5 * 1024 * 1024;
+const MAX_BYTES = 2 * 1024 * 1024;
 
 interface ReceiptAttachmentProps {
   /** Current receipt metadata; null when the expense has no receipt. */
@@ -50,9 +52,10 @@ const formatBytes = (bytes: number): string => {
 };
 
 /**
- * Shared receipt attachment control: preview (+ lazy authenticated fetch),
- * replace, remove, upload-in-progress and error states. Used by the group and
- * personal expense forms (editable) and by the expense lists (read-only).
+ * Shared receipt attachment control: lazy authenticated preview, a dedicated
+ * full-size viewer, replace, remove-with-confirmation, upload-in-progress and
+ * error states. Used by the group and personal expense forms (editable) and by
+ * the group expense detail (read/write per authorization).
  */
 export function ReceiptAttachment({
   attachment,
@@ -65,11 +68,14 @@ export function ReceiptAttachment({
 }: ReceiptAttachmentProps) {
   const pendingMode = onPendingFileChange !== undefined;
   const inputRef = useRef<HTMLInputElement | null>(null);
+  const { addToast } = useToast();
 
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [previewFailed, setPreviewFailed] = useState(false);
   const [busy, setBusy] = useState<"upload" | "remove" | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [confirmRemove, setConfirmRemove] = useState(false);
+  const [viewerOpen, setViewerOpen] = useState(false);
 
   const getBlobRef = useRef(getBlob);
   useEffect(() => {
@@ -110,6 +116,21 @@ export function ReceiptAttachment({
     };
   }, [attachment, fileKey]);
 
+  /* Close the viewer on Escape, mirroring ConfirmDialog's dialog behavior. */
+  useEffect(() => {
+    if (!viewerOpen) {
+      return undefined;
+    }
+    const handleKeyDown = (event: KeyboardEvent): void => {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        setViewerOpen(false);
+      }
+    };
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, [viewerOpen]);
+
   const openPicker = () => inputRef.current?.click();
 
   const handleFileChange = (event: ChangeEvent<HTMLInputElement>) => {
@@ -123,7 +144,7 @@ export function ReceiptAttachment({
       return;
     }
     if (file.size > MAX_BYTES) {
-      setError("Receipts must be 5 MB or smaller.");
+      setError("Receipts must be 2 MB or smaller.");
       return;
     }
     setError(null);
@@ -136,8 +157,24 @@ export function ReceiptAttachment({
     }
     setBusy("upload");
     onUpload(file)
+      .then(() => addToast("Receipt saved.", "success"))
       .catch((uploadError: unknown) => setError(getErrorMessage(uploadError)))
       .finally(() => setBusy(null));
+  };
+
+  const handleRemoveConfirmed = () => {
+    if (!onRemove) {
+      return;
+    }
+    setBusy("remove");
+    setError(null);
+    onRemove()
+      .then(() => addToast("Receipt removed.", "success"))
+      .catch((removeError: unknown) => setError(getErrorMessage(removeError)))
+      .finally(() => {
+        setBusy(null);
+        setConfirmRemove(false);
+      });
   };
 
   const handleRemove = () => {
@@ -145,14 +182,7 @@ export function ReceiptAttachment({
       onPendingFileChange?.(null);
       return;
     }
-    if (!onRemove) {
-      return;
-    }
-    setBusy("remove");
-    setError(null);
-    onRemove()
-      .catch((removeError: unknown) => setError(getErrorMessage(removeError)))
-      .finally(() => setBusy(null));
+    setConfirmRemove(true);
   };
 
   if (pendingMode) {
@@ -190,7 +220,7 @@ export function ReceiptAttachment({
         <button className="btn btn--secondary btn--sm" type="button" onClick={openPicker} disabled={busy !== null}>
           Attach receipt
         </button>
-        <p className="receipt-field__meta">JPEG, PNG or WebP, up to 5 MB.</p>
+        <p className="receipt-field__meta">JPEG, PNG or WebP, up to 2 MB.</p>
         {error && <Banner tone="error">{error}</Banner>}
       </div>
     );
@@ -213,14 +243,26 @@ export function ReceiptAttachment({
         <button className="btn btn--secondary btn--sm" type="button" onClick={openPicker} disabled={busy !== null}>
           Attach receipt
         </button>
-        <p className="receipt-field__meta">JPEG, PNG or WebP, up to 5 MB.</p>
+        <p className="receipt-field__meta">JPEG, PNG or WebP, up to 2 MB.</p>
         {error && <Banner tone="error">{error}</Banner>}
       </div>
     );
   }
 
+  const viewerContent = previewUrl ? (
+    <img className="receipt-lightbox__img" src={previewUrl} alt={`Receipt: ${attachment.filename}`} />
+  ) : previewFailed ? (
+    <p className="dialog__message">Preview unavailable.</p>
+  ) : (
+    <div className="receipt-lightbox__loading">
+      <Spinner label="Loading receipt" />
+    </div>
+  );
+
   return (
     <div className="receipt-field">
+      <span className="badge badge--success">Receipt attached</span>
+
       {previewUrl ? (
         <img className="receipt-field__preview" src={previewUrl} alt={`Receipt: ${attachment.filename}`} />
       ) : previewFailed ? (
@@ -232,27 +274,68 @@ export function ReceiptAttachment({
           <Spinner label="Loading receipt" />
         </div>
       )}
+
       <p className="receipt-field__name">{attachment.filename}</p>
       <p className="receipt-field__meta">
         {attachment.mimeType.replace("image/", "").toUpperCase()} · {formatBytes(attachment.sizeBytes)}
       </p>
+
       {error && <Banner tone="error">{error}</Banner>}
-      {canModify && (
-        <div className="receipt-field__actions">
-          <input
-            ref={inputRef}
-            className="visually-hidden"
-            type="file"
-            accept={ACCEPT_TYPES}
-            onChange={handleFileChange}
-            aria-label="Replace the receipt image"
-          />
-          <button className="btn btn--ghost btn--sm" type="button" onClick={openPicker} disabled={busy !== null}>
-            {busy === "upload" ? "Uploading…" : "Replace"}
-          </button>
-          <button className="btn btn--danger btn--sm" type="button" onClick={handleRemove} disabled={busy !== null}>
-            {busy === "remove" ? "Removing…" : "Remove"}
-          </button>
+
+      <div className="receipt-field__actions">
+        <button className="btn btn--secondary btn--sm" type="button" onClick={() => setViewerOpen(true)} disabled={!previewUrl}>
+          View receipt
+        </button>
+        {canModify && (
+          <>
+            <input
+              ref={inputRef}
+              className="visually-hidden"
+              type="file"
+              accept={ACCEPT_TYPES}
+              onChange={handleFileChange}
+              aria-label="Replace the receipt image"
+            />
+            <button className="btn btn--ghost btn--sm" type="button" onClick={openPicker} disabled={busy !== null}>
+              {busy === "upload" ? "Uploading…" : "Replace"}
+            </button>
+            <button className="btn btn--danger btn--sm" type="button" onClick={handleRemove} disabled={busy !== null}>
+              {busy === "remove" ? "Removing…" : "Remove"}
+            </button>
+          </>
+        )}
+      </div>
+
+      <ConfirmDialog
+        open={confirmRemove}
+        title="Remove receipt?"
+        message="This permanently deletes the attached receipt from this expense and cannot be undone from the app."
+        confirmLabel="Remove receipt"
+        tone="danger"
+        busy={busy === "remove"}
+        onConfirm={handleRemoveConfirmed}
+        onCancel={() => setConfirmRemove(false)}
+      />
+
+      {viewerOpen && attachment && (
+        <div
+          className="dialog-backdrop receipt-lightbox"
+          role="presentation"
+          onMouseDown={(event) => {
+            if (event.target === event.currentTarget) {
+              setViewerOpen(false);
+            }
+          }}
+        >
+          <div className="dialog receipt-lightbox__dialog" role="dialog" aria-modal="true" aria-label={`Receipt: ${attachment.filename}`}>
+            <div className="receipt-lightbox__header">
+              <h2 className="dialog__title">{attachment.filename}</h2>
+              <button className="btn btn--secondary btn--sm" type="button" onClick={() => setViewerOpen(false)}>
+                Close
+              </button>
+            </div>
+            {viewerContent}
+          </div>
         </div>
       )}
     </div>

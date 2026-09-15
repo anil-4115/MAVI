@@ -31,7 +31,7 @@ const check = (condition: boolean, label: string): void => {
 /* -------------------------------------------------------------------------- */
 /*                     Constants & supported type contract                     */
 /* -------------------------------------------------------------------------- */
-check(DEFAULT_MAX_ATTACHMENT_BYTES === 5 * 1024 * 1024, "DEFAULT_MAX_ATTACHMENT_BYTES is 5 MB");
+check(DEFAULT_MAX_ATTACHMENT_BYTES === 2 * 1024 * 1024, "DEFAULT_MAX_ATTACHMENT_BYTES is 2 MB");
 check(MAX_ATTACHMENT_FILENAME_LENGTH === 120, "MAX_ATTACHMENT_FILENAME_LENGTH is 120");
 check(
   SUPPORTED_IMAGE_TYPES.length === 3 &&

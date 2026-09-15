@@ -10,15 +10,11 @@ import { formatDate } from "../../../lib/format";
 import { formatMoney } from "../../../lib/money";
 import { getErrorMessage } from "../../../services/api";
 import {
-  deletePersonalAttachment,
   deletePersonalExpense,
-  getPersonalAttachment,
   listPersonalExpenses,
-  uploadPersonalAttachment,
   type PublicExpense,
 } from "../api/expensesApi";
 import { PersonalExpenseForm } from "./PersonalExpenseForm";
-import { ReceiptAttachment } from "./ReceiptAttachment";
 
 const PAGE_SIZE = 20;
 
@@ -79,12 +75,6 @@ export function PersonalExpensesPanel({ autoAdd = false }: PersonalExpensesPanel
     closeForm();
     void loadFirstPage();
   };
-
-  const updateExpense = useCallback((expenseId: string, updated: PublicExpense) => {
-    setExpenses((current) =>
-      (current ?? []).map((item) => (item.id === expenseId ? { ...item, attachment: updated.attachment } : item)),
-    );
-  }, []);
 
   const handleLoadMore = async () => {
     if (!expenses) {
@@ -161,24 +151,10 @@ export function PersonalExpensesPanel({ autoAdd = false }: PersonalExpensesPanel
                   </span>
                   <div className="personal-expense__body">
                     <p className="row__primary">{expense.title}</p>
-                    <p className="row__secondary">{formatDate(expense.expenseDate)}</p>
-                    {expense.attachment && (
-                      <div className="personal-expense__receipt">
-                        <ReceiptAttachment
-                          attachment={expense.attachment}
-                          canModify
-                          getBlob={() => getPersonalAttachment(expense.id)}
-                          onUpload={async (file) => {
-                            const updated = await uploadPersonalAttachment(expense.id, file);
-                            updateExpense(expense.id, updated);
-                          }}
-                          onRemove={async () => {
-                            const updated = await deletePersonalAttachment(expense.id);
-                            updateExpense(expense.id, updated);
-                          }}
-                        />
-                      </div>
-                    )}
+                    <p className="row__secondary expense-row__indicator">
+                      {formatDate(expense.expenseDate)}
+                      {expense.attachment && <span className="badge badge--accent">Receipt</span>}
+                    </p>
                   </div>
                   <p className="row__meta personal-row__meta">
                     <span className="personal-row__amount">

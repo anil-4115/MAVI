@@ -24,6 +24,7 @@ import { Expense } from "../src/modules/expenses/expense.model.js";
 import { Settlement } from "../src/modules/settlements/settlement.model.js";
 import { Notification } from "../src/modules/notifications/notification.model.js";
 import { ATTACHMENT_BUCKET_NAME } from "../src/modules/expenses/attachment.service.js";
+import { DEFAULT_MAX_ATTACHMENT_BYTES } from "../src/modules/expenses/attachment.validation.js";
 
 const PASSWORD = "SmokeTest123";
 const TEST_DOMAIN = "@mavi-att-smoke.test";
@@ -272,9 +273,14 @@ async function main(): Promise<void> {
     await dlHeaders.arrayBuffer();
 
     /* ---------------- oversize + mime-spoof guards at the API ------------- */
-    const big = Buffer.concat([Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]), Buffer.alloc(6 * 1024 * 1024)]);
-    const oversize = await upload(base, gExpPath, tokenOwner, "big.png", big);
-    check(oversize.status === 413, "SIZE: 6 MiB upload -> 413");
+    const pngHeader = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
+    const exactCap = Buffer.concat([pngHeader, Buffer.alloc(DEFAULT_MAX_ATTACHMENT_BYTES - pngHeader.length, 1)]);
+    check(exactCap.length === DEFAULT_MAX_ATTACHMENT_BYTES, "SIZE: boundary buffer is exactly DEFAULT_MAX_ATTACHMENT_BYTES");
+    const atCap = await upload(base, gExpPath, tokenOwner, "exact.png", exactCap);
+    check(atCap.status === 200, "SIZE: exactly-2-MiB upload -> 200");
+    const overCap = Buffer.concat([pngHeader, Buffer.alloc(DEFAULT_MAX_ATTACHMENT_BYTES - pngHeader.length + 1, 1)]);
+    const oversize = await upload(base, gExpPath, tokenOwner, "over.png", overCap);
+    check(oversize.status === 413, "SIZE: 2 MiB + 1 byte upload -> 413");
     const renamedText = Buffer.from("this is definitely not an image but we renamed it .jpg");
     const spoof = await upload(base, gExpPath, tokenOwner, "fake.jpg", renamedText);
     check(spoof.status === 400, "MIME: renamed text file -> 400");
@@ -284,7 +290,7 @@ async function main(): Promise<void> {
     /* ---------------- replace: old GridFS file is cleaned up ------------- */
     const beforeReplace = await bucketCount();
     const replaced = await upload(base, gExpPath, tokenOwner, "receipt.png", PNG);
-    check(replaced.status === 200, "REPLACE: upload png over jpeg -> 200");
+    check(replaced.status === 200, "REPLACE: upload png over existing -> 200");
     const replacedAtt = ((replaced.json?.data as Jsonable).expense as Jsonable | undefined)?.attachment as Jsonable | null;
     check(
       (replacedAtt?.mimeType as string) === "image/png" && (replacedAtt?.sizeBytes as number) === PNG.length,

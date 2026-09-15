@@ -6,7 +6,7 @@ import { env } from "../../config/env.js";
 /**
  * Multipart parser for the single `attachment` file field, bounded to memory.
  *
- * - `fileSize` enforces the strict size cap at the parser level (5 MB default,
+ * - `fileSize` enforces the strict size cap at the parser level (2 MB default,
  *   `ATTACHMENT_MAX_BYTES` optional override), so oversized payloads never
  *   arrive in application code.
  * - `files: 1` and `fields: 0` keep the request shape strict.

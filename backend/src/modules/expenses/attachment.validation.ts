@@ -1,7 +1,7 @@
 import { ApiError } from "../../utils/ApiError.js";
 
-/** Safe default maximum attachment size: 5 MB (in bytes). */
-export const DEFAULT_MAX_ATTACHMENT_BYTES = 5 * 1024 * 1024;
+/** Safe default maximum attachment size: 2 MB (in bytes). */
+export const DEFAULT_MAX_ATTACHMENT_BYTES = 2 * 1024 * 1024;
 
 /** Display filename length cap (mirrors the title caps used elsewhere). */
 export const MAX_ATTACHMENT_FILENAME_LENGTH = 120;

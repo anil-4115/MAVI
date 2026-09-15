@@ -304,10 +304,48 @@
   gap: 8px;
 }
 
-/* Personal list row embedded receipt stays compact. */
-.personal-expense__receipt {
-  margin-top: 10px;
-  max-width: 320px;
+/* Full-size receipt viewer (reuses the shared dialog backdrop/dialog shell). */
+.receipt-lightbox__dialog {
+  max-width: 760px;
+}
+
+.receipt-lightbox__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 4px;
+}
+
+.receipt-lightbox__header .dialog__title {
+  margin-bottom: 0;
+  overflow-wrap: anywhere;
+}
+
+.receipt-lightbox__img {
+  width: 100%;
+  max-height: 62svh;
+  object-fit: contain;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+  margin-top: 12px;
+}
+
+.receipt-lightbox__loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 160px;
+  margin-top: 12px;
+}
+
+/* Subtle list-row indicator that an expense has an attachment. */
+.expense-row__indicator {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
 }
 
 .expense-row__receipt {
