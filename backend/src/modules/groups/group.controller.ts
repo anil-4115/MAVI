@@ -9,16 +9,19 @@ import {
   getGroupDetail,
   getGroupForInvitePreview,
   inviteMember,
-  listActiveGroups,
+  listGroups,
   listMembers,
+  permanentlyDeleteGroup,
   removeMember,
   respondToInvitation,
+  restoreGroup,
   transferOwnership,
   updateGroup,
 } from "./group.service.js";
 import {
   validateAddMember,
   validateCreateGroup,
+  validateGroupListStatus,
   validateRole,
   validateUpdateGroup,
 } from "./group.validation.js";
@@ -40,9 +43,14 @@ export const create = asyncHandler(async (req: Request, res: Response) => {
 
 export const list = asyncHandler(async (req: Request, res: Response) => {
   const actorId = requireUser(req);
-  const groups = await listActiveGroups(actorId);
+  const status = validateGroupListStatus((req.query as Record<string, unknown>).status);
+  const groups = await listGroups(actorId, status);
 
-  res.status(200).json({ success: true, message: "Groups retrieved successfully", data: { groups } });
+  res.status(200).json({
+    success: true,
+    message: status === "archived" ? "Archived groups retrieved successfully" : "Groups retrieved successfully",
+    data: { groups },
+  });
 });
 
 export const detail = asyncHandler(async (req: Request, res: Response) => {
@@ -76,6 +84,22 @@ export const archive = asyncHandler(async (req: Request, res: Response) => {
   const group = await archiveGroup(groupId, actorId);
 
   res.status(200).json({ success: true, message: "Group archived successfully", data: { group } });
+});
+
+export const permanentDelete = asyncHandler(async (req: Request, res: Response) => {
+  const actorId = requireUser(req);
+  const groupId = requireObjectId(req.params.groupId, "Group ID");
+  await permanentlyDeleteGroup(groupId, actorId);
+
+  res.status(200).json({ success: true, message: "Group permanently deleted", data: null });
+});
+
+export const restore = asyncHandler(async (req: Request, res: Response) => {
+  const actorId = requireUser(req);
+  const groupId = requireObjectId(req.params.groupId, "Group ID");
+  const group = await restoreGroup(groupId, actorId);
+
+  res.status(200).json({ success: true, message: "Group restored successfully", data: { group } });
 });
 
 export const invite = asyncHandler(async (req: Request, res: Response) => {

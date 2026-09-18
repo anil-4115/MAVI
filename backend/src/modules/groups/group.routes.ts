@@ -11,7 +11,9 @@ import {
   list,
   members,
   owner,
+  permanentDelete,
   remove,
+  restore,
   role,
   update,
 } from "./group.controller.js";
@@ -25,7 +27,9 @@ router.post("/", create);
 router.get("/:groupId/preview", getInvitePreview);
 router.get("/:groupId", detail);
 router.patch("/:groupId", update);
-router.delete("/:groupId", archive);
+router.patch("/:groupId/archive", archive);
+router.patch("/:groupId/restore", restore);
+router.delete("/:groupId", permanentDelete);
 
 router.get("/:groupId/members", members);
 router.post("/:groupId/members", invite);

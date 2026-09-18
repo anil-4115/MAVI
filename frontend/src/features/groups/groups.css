@@ -47,6 +47,15 @@
   padding: 4px 10px;
 }
 
+.group-card__actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 4px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+}
+
 .group-detail__back {
   display: inline-block;
   font-size: 14px;

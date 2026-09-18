@@ -123,6 +123,13 @@ export function onGroupArchived(group: GroupLike, actorId: string): NewNotificat
   });
 }
 
+/** The group was restored (unarchived). Notify every other active member. */
+export function onGroupRestored(group: GroupLike, actorId: string): NewNotification[] {
+  return build(group, "group_restored", actorId, activeMemberIds(group.members), {
+    ...groupMeta(group.name),
+  });
+}
+
 export interface SettlementEventData {
   id: string;
   payerId: string;

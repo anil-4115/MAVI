@@ -3,6 +3,7 @@ import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom"
 import { Banner } from "../../components/ui/Banner";
 import { ErrorState } from "../../components/ui/ErrorState";
 import { Spinner } from "../../components/ui/Spinner";
+import { useToast } from "../../components/ui/Toast";
 import { formatDate } from "../../lib/format";
 import { getErrorMessage } from "../../services/api";
 import { useAuth } from "../auth/useAuth";
@@ -39,6 +40,7 @@ export function GroupDetailPage() {
   const { groupId } = useParams<{ groupId: string }>();
   const { user } = useAuth();
   const navigate = useNavigate();
+  const { addToast } = useToast();
   const [searchParams] = useSearchParams();
   const urlTab = searchParams.get("tab");
 
@@ -124,7 +126,12 @@ export function GroupDetailPage() {
     );
   }
 
-  const showSettings = !group.archived && (group.myRole === "owner" || group.myRole === "admin");
+  const showSettings = group.myRole === "owner" || group.myRole === "admin";
+
+  const handleDeleted = () => {
+    addToast("Group permanently deleted.", "success");
+    navigate("/groups");
+  };
 
   return (
     <div className="app-page">
@@ -169,6 +176,7 @@ export function GroupDetailPage() {
           onArchived={(updated) => {
             setGroup(updated);
           }}
+          onDeleted={handleDeleted}
         />
       )}
 

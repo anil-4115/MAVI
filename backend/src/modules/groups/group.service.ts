@@ -1,12 +1,17 @@
-import type { Types } from "mongoose";
+import { Types } from "mongoose";
 import { User } from "../auth/auth.model.js";
 import { Group, type GroupDocument } from "./group.model.js";
+import { Expense } from "../expenses/expense.model.js";
+import { Settlement } from "../settlements/settlement.model.js";
+import { Notification } from "../notifications/notification.model.js";
+import { deleteImage } from "../expenses/attachment.service.js";
 import { ApiError } from "../../utils/ApiError.js";
 import { DEFAULT_CURRENCY } from "../common/money.js";
 import { assertOwnerInvariant, type AddMemberInput, type CreateGroupInput, type RoleInput, type UpdateGroupInput } from "./group.validation.js";
 import {
   notify,
   onGroupArchived,
+  onGroupRestored,
   onGroupInvitation,
   onInvitationAccepted,
   onMemberLeft,
@@ -139,9 +144,14 @@ export async function createGroup(
 
 /* ----------------------------------- list ---------------------------------- */
 
-export async function listActiveGroups(userId: string): Promise<PublicGroup[]> {
+export type GroupListStatus = "active" | "archived";
+
+export async function listGroups(
+  userId: string,
+  status: GroupListStatus = "active",
+): Promise<PublicGroup[]> {
   const groups = (await Group.find({
-    archived: false,
+    archived: status === "archived",
     members: { $elemMatch: { userId: userId as unknown as Types.ObjectId, status: "active" } },
   }).sort({ createdAt: -1 })) as unknown as GroupDocument[];
 
@@ -213,6 +223,80 @@ export async function archiveGroup(groupId: string, actorId: string): Promise<Pu
 
   // Visible only via explicit detail call (not the archived-excluded list).
   return toPublicGroup(group, actorId);
+}
+
+/* ---------------------------------- restore -------------------------------- */
+
+/**
+ * Owner-only unarchive. Reverses an archive: the group returns to Active and
+ * every read/write guard immediately resumes because each one checks the live
+ * `archived` flag at request time. Expenses, settlements, receipts, members
+ * and notifications are left exactly as they were — nothing is re-created.
+ * A group must already be archived (409 otherwise), so restore never races
+ * active usage and the archive-first permanent-delete rule stays intact.
+ */
+export async function restoreGroup(groupId: string, actorId: string): Promise<PublicGroup> {
+  const group = await findGroupOrThrow(groupId);
+  const actor = requireActiveMember(group, actorId);
+  if (actor.role !== "owner") {
+    throw new ApiError(403, "Only the group owner can restore the group");
+  }
+
+  if (!group.archived) {
+    throw new ApiError(409, "Group is not archived");
+  }
+
+  group.archived = false;
+  group.archivedAt = null;
+  await group.save();
+
+  await notify(onGroupRestored(group, actorId));
+
+  return toPublicGroup(group, actorId);
+}
+
+/* ---------------------------- permanent delete ---------------------------- */
+
+/**
+ * Irreversibly delete an archived group and every record that references it:
+ * its expenses (including their GridFS receipts), settlements, and group-scoped
+ * notifications. Owner-only and archive-first: a group must be archived before
+ * it can be permanently deleted, so this "undo" path never races active usage.
+ *
+ * The GridFS cleanup runs BEFORE the group record is removed. If any file
+ * delete fails, the whole operation aborts (the group still exists) and is
+ * safe to retry, so we never report success while leaving orphaned receipts.
+ */
+export async function permanentlyDeleteGroup(groupId: string, actorId: string): Promise<void> {
+  const group = await findGroupOrThrow(groupId);
+  const actor = requireActiveMember(group, actorId);
+  if (actor.role !== "owner") {
+    throw new ApiError(403, "Only the group owner can permanently delete the group");
+  }
+
+  if (!group.archived) {
+    throw new ApiError(409, "Only archived groups can be permanently deleted");
+  }
+
+  const groupObjectId = new Types.ObjectId(groupId);
+
+  /* Capture receipt file ids BEFORE any expense rows are removed. */
+  const expenseDocs = (await Expense.find({ group: groupObjectId }).select("attachment")) as unknown as Array<{
+    attachment: { fileId: Types.ObjectId } | null;
+  }>;
+  const fileIds = expenseDocs
+    .map((expense) => (expense.attachment ? expense.attachment.fileId.toString() : null))
+    .filter((fileId): fileId is string => fileId !== null);
+
+  await Settlement.deleteMany({ group: groupObjectId });
+  await Expense.deleteMany({ group: groupObjectId });
+  await Notification.deleteMany({ group: groupObjectId });
+
+  for (const fileId of fileIds) {
+    await deleteImage(fileId);
+  }
+
+  await Group.deleteOne({ _id: groupObjectId });
 }
 
 /* ---------------------------------- members -------------------------------- */

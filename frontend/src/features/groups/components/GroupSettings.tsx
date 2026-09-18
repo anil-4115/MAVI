@@ -3,21 +3,28 @@ import { Banner } from "../../../components/ui/Banner";
 import { ConfirmDialog } from "../../../components/ui/ConfirmDialog";
 import { useToast } from "../../../components/ui/Toast";
 import { getErrorMessage } from "../../../services/api";
-import { archiveGroup, updateGroup, type PublicGroup } from "../api/groupsApi";
+import {
+  archiveGroup,
+  permanentlyDeleteGroup,
+  updateGroup,
+  type PublicGroup,
+} from "../api/groupsApi";
 import { validateGroupDescription, validateGroupName } from "../lib/validators";
 
 interface GroupSettingsProps {
   group: PublicGroup;
   onSaved: (group: PublicGroup) => void;
   onArchived: (group: PublicGroup) => void;
+  onDeleted: () => void;
 }
 
 /**
  * Group management panel for owner/admin members (rendered by the detail
  * page). Covers editing the group name/description and (owner only) archiving
- * the group. Archived groups are read-only everywhere.
+ * the group. Archived groups are read-only everywhere; their owner can still
+ * open this panel to permanently delete the group.
  */
-export function GroupSettings({ group, onSaved, onArchived }: GroupSettingsProps) {
+export function GroupSettings({ group, onSaved, onArchived, onDeleted }: GroupSettingsProps) {
   const isOwner = group.myRole === "owner";
   const canEdit = group.myRole === "owner" || group.myRole === "admin";
 
@@ -31,9 +38,16 @@ export function GroupSettings({ group, onSaved, onArchived }: GroupSettingsProps
   const [confirmArchive, setConfirmArchive] = useState(false);
   const [isArchiving, setIsArchiving] = useState(false);
   const [archiveError, setArchiveError] = useState<string | null>(null);
+
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
   const { addToast } = useToast();
 
-  if (!canEdit || group.archived) {
+  const showEditing = !group.archived && canEdit;
+  const showDeleteCard = group.archived && isOwner;
+
+  if (!showEditing && !showDeleteCard) {
     return null;
   }
 
@@ -87,94 +101,142 @@ export function GroupSettings({ group, onSaved, onArchived }: GroupSettingsProps
     }
   };
 
+  const handleDeleteForever = async () => {
+    setIsDeleting(true);
+    setDeleteError(null);
+    try {
+      await permanentlyDeleteGroup(group.id);
+      setConfirmDelete(false);
+      onDeleted();
+    } catch (deleteFailure) {
+      setDeleteError(getErrorMessage(deleteFailure));
+      setIsDeleting(false);
+      setConfirmDelete(false);
+    }
+  };
+
   return (
     <section className="mgmt-card card" aria-label="Group management">
-      <div className="mgmt-card__head">
-        <h2 className="card__title">Group management</h2>
-        {!editing && (
-          <button className="btn btn--ghost btn--sm" type="button" onClick={startEditing}>
-            Edit details
-          </button>
-        )}
-      </div>
+      {showEditing && (
+        <>
+          <div className="mgmt-card__head">
+            <h2 className="card__title">Group management</h2>
+            {!editing && (
+              <button className="btn btn--ghost btn--sm" type="button" onClick={startEditing}>
+                Edit details
+              </button>
+            )}
+          </div>
 
-      {editing ? (
-        <form className="form" onSubmit={handleSave} noValidate>
-          {saveError && <Banner tone="error">{saveError}</Banner>}
-          <div className={`field${fieldErrors.name ? " field--invalid" : ""}`}>
-            <label htmlFor="edit-group-name">Group name</label>
-            <input
-              id="edit-group-name"
-              type="text"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              aria-invalid={Boolean(fieldErrors.name)}
-              aria-describedby={fieldErrors.name ? "edit-group-name-error" : undefined}
-            />
-            {fieldErrors.name && (
-              <span id="edit-group-name-error" className="field__error">
-                {fieldErrors.name}
-              </span>
-            )}
-          </div>
-          <div className={`field${fieldErrors.description ? " field--invalid" : ""}`}>
-            <label htmlFor="edit-group-description">Description</label>
-            <textarea
-              id="edit-group-description"
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              aria-invalid={Boolean(fieldErrors.description)}
-              aria-describedby={fieldErrors.description ? "edit-group-description-error" : undefined}
-            />
-            {fieldErrors.description && (
-              <span id="edit-group-description-error" className="field__error">
-                {fieldErrors.description}
-              </span>
-            )}
-          </div>
-          <div className="form__actions">
-            <button className="btn" type="submit" disabled={isSaving}>
-              {isSaving ? "Saving…" : "Save changes"}
-            </button>
-            <button
-              className="btn btn--secondary"
-              type="button"
-              onClick={() => setEditing(false)}
-              disabled={isSaving}
-            >
-              Cancel
-            </button>
-          </div>
-        </form>
-      ) : (
-        <p className="mgmt-card__hint">
-          Manage the group&apos;s name, description and lifecycle. Expenses and settlements are
-          added from their own tabs.
-        </p>
+          {editing ? (
+            <form className="form" onSubmit={handleSave} noValidate>
+              {saveError && <Banner tone="error">{saveError}</Banner>}
+              <div className={`field${fieldErrors.name ? " field--invalid" : ""}`}>
+                <label htmlFor="edit-group-name">Group name</label>
+                <input
+                  id="edit-group-name"
+                  type="text"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  aria-invalid={Boolean(fieldErrors.name)}
+                  aria-describedby={fieldErrors.name ? "edit-group-name-error" : undefined}
+                />
+                {fieldErrors.name && (
+                  <span id="edit-group-name-error" className="field__error">
+                    {fieldErrors.name}
+                  </span>
+                )}
+              </div>
+              <div className={`field${fieldErrors.description ? " field--invalid" : ""}`}>
+                <label htmlFor="edit-group-description">Description</label>
+                <textarea
+                  id="edit-group-description"
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                  aria-invalid={Boolean(fieldErrors.description)}
+                  aria-describedby={fieldErrors.description ? "edit-group-description-error" : undefined}
+                />
+                {fieldErrors.description && (
+                  <span id="edit-group-description-error" className="field__error">
+                    {fieldErrors.description}
+                  </span>
+                )}
+              </div>
+              <div className="form__actions">
+                <button className="btn" type="submit" disabled={isSaving}>
+                  {isSaving ? "Saving…" : "Save changes"}
+                </button>
+                <button
+                  className="btn btn--secondary"
+                  type="button"
+                  onClick={() => setEditing(false)}
+                  disabled={isSaving}
+                >
+                  Cancel
+                </button>
+              </div>
+            </form>
+          ) : (
+            <p className="mgmt-card__hint">
+              Manage the group&apos;s name, description and lifecycle. Expenses and settlements are
+              added from their own tabs.
+            </p>
+          )}
+
+          {isOwner && (
+            <div className="mgmt-card__danger">
+              {archiveError && <Banner tone="error">{archiveError}</Banner>}
+              <button
+                className="btn btn--danger btn--sm"
+                type="button"
+                onClick={() => setConfirmArchive(true)}
+              >
+                Archive group
+              </button>
+            </div>
+          )}
+
+          <ConfirmDialog
+            open={confirmArchive}
+            title={`Archive “${group.name}”?`}
+            message="Archiving makes the group read-only for everyone. Balances and history stay visible, but no new expenses or settlements can be added. This cannot be undone from the app."
+            confirmLabel="Archive group"
+            busy={isArchiving}
+            onConfirm={() => void handleArchive()}
+            onCancel={() => setConfirmArchive(false)}
+          />
+        </>
       )}
 
-      {isOwner && (
+      {showDeleteCard && (
         <div className="mgmt-card__danger">
-          {archiveError && <Banner tone="error">{archiveError}</Banner>}
+          <h2 className="card__title">Danger zone</h2>
+          <p className="mgmt-card__hint">
+            Permanently delete “{group.name}”, its expenses, receipts, settlements and
+            notifications. This cannot be undone.
+          </p>
+          {deleteError && <Banner tone="error">{deleteError}</Banner>}
           <button
-            className="btn btn--danger btn--sm"
+            className="btn btn--danger"
             type="button"
-            onClick={() => setConfirmArchive(true)}
+            onClick={() => setConfirmDelete(true)}
           >
-            Archive group
+            Permanently delete group
           </button>
+
+          <ConfirmDialog
+            open={confirmDelete}
+            title={`Permanently delete “${group.name}”?`}
+            message="This permanently deletes the group along with all of its expenses, receipts, settlements and notifications. This cannot be undone from the app."
+            confirmLabel="Delete forever"
+            requireKeyword="PERMANENTLY"
+            keywordLabel="Type PERMANENTLY to confirm"
+            busy={isDeleting}
+            onConfirm={() => void handleDeleteForever()}
+            onCancel={() => setConfirmDelete(false)}
+          />
         </div>
       )}
-
-      <ConfirmDialog
-        open={confirmArchive}
-        title={`Archive “${group.name}”?`}
-        message="Archiving makes the group read-only for everyone. Balances and history stay visible, but no new expenses or settlements can be added. This cannot be undone from the app."
-        confirmLabel="Archive group"
-        busy={isArchiving}
-        onConfirm={() => void handleArchive()}
-        onCancel={() => setConfirmArchive(false)}
-      />
     </section>
   );
 }

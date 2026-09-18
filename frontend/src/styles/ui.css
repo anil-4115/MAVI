@@ -909,6 +909,10 @@ section.card .empty-state {
   margin: 0 0 var(--sp-5);
 }
 
+.dialog__keyword {
+  margin: 0 0 var(--sp-5);
+}
+
 .dialog__actions {
   display: flex;
   justify-content: flex-end;

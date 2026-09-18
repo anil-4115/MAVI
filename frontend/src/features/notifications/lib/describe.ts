@@ -23,6 +23,7 @@ export const NOTIFICATION_TYPE_LABELS: { type: NotificationType; label: string }
   { type: "role_changed", label: "Role changed" },
   { type: "ownership_transferred", label: "Ownership transfer" },
   { type: "group_archived", label: "Group archived" },
+  { type: "group_restored", label: "Group restored" },
   { type: "expense_created", label: "Expenses" },
   { type: "settlement_recorded", label: "Settlements" },
 ];
@@ -72,6 +73,8 @@ export function describeNotification(
       return { heading: groupName ? `You are now the owner of ${groupName}` : "You are now the group owner" };
     case "group_archived":
       return { heading: groupName ? `${groupName} was archived` : "A group was archived" };
+    case "group_restored":
+      return { heading: groupName ? `${groupName} is active again` : "A group was restored" };
     case "expense_created": {
       const title = readMetadataString(metadata, "title");
       const amountMinor = readMetadataMoney(metadata, "amountMinor");

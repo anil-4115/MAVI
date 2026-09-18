@@ -95,6 +95,17 @@ export const validateRole = (body: unknown): RoleInput => {
 };
 
 /**
+ * Resolve the GET /groups list `status` query filter. Missing/`active` returns
+ * the active list (the default); `archived` returns archived groups, which are
+ * otherwise excluded from every list/derived endpoint.
+ */
+export function validateGroupListStatus(value: unknown): "active" | "archived" {
+  if (value === undefined || value === null || value === "active") return "active";
+  if (value === "archived") return "archived";
+  throw new ApiError(400, "status must be 'active' or 'archived'");
+}
+
+/**
  * Assert core membership invariants on a fresh/updated member list:
  * exactly one owner (active), every active/invited userId unique, no other
  * entries holding owner role.

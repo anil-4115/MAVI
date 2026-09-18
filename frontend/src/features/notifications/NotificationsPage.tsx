@@ -35,6 +35,7 @@ const TYPE_ICONS: Record<NotificationType, IconName> = {
   role_changed: "settings",
   ownership_transferred: "user",
   group_archived: "bell-off",
+  group_restored: "home",
   expense_created: "expenses",
   settlement_recorded: "settlements",
 };

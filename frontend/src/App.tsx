@@ -10,6 +10,7 @@ import { ResetPasswordPage } from "./features/auth/pages/ResetPasswordPage";
 import { DashboardPage } from "./features/dashboard/DashboardPage";
 import { ExpensesPage } from "./features/expenses/ExpensesPage";
 import { PersonalExpensesPage } from "./features/expenses/PersonalExpensesPage";
+import { ArchivedGroupsPage } from "./features/groups/ArchivedGroupsPage";
 import { GroupDetailPage } from "./features/groups/GroupDetailPage";
 import { GroupsPage } from "./features/groups/GroupsPage";
 import { NotificationsPage } from "./features/notifications/NotificationsPage";
@@ -66,6 +67,9 @@ function AppRoutes() {
       >
         <Route path="/dashboard" element={<DashboardPage />} />
         <Route path="/groups" element={<GroupsPage />} />
+        {/* Static segment beats the dynamic :groupId route, so /groups/archived
+            resolves here and never hits the group detail page. */}
+        <Route path="/groups/archived" element={<ArchivedGroupsPage />} />
         <Route path="/groups/:groupId" element={<GroupDetailPage />} />
         <Route path="/expenses" element={<ExpensesPage />} />
         <Route path="/expenses/personal" element={<PersonalExpensesPage />} />

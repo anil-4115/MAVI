@@ -9,6 +9,7 @@ export {
   leaderIds,
   onExpenseCreated,
   onGroupArchived,
+  onGroupRestored,
   onGroupInvitation,
   onInvitationAccepted,
   onMemberLeft,

@@ -13,6 +13,7 @@ export const NOTIFICATION_TYPES = [
   "role_changed",
   "ownership_transferred",
   "group_archived",
+  "group_restored",
   "expense_created",
   "settlement_recorded",
 ] as const;

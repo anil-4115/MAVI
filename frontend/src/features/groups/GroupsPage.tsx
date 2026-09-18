@@ -1,52 +1,14 @@
 import { useCallback, useEffect, useState, type FormEvent } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Avatar } from "../../components/ui/Avatar";
 import { Banner } from "../../components/ui/Banner";
 import { EmptyState } from "../../components/ui/EmptyState";
 import { ErrorState } from "../../components/ui/ErrorState";
-import { Icon } from "../../components/ui/Icon";
 import { Spinner } from "../../components/ui/Spinner";
 import { useToast } from "../../components/ui/Toast";
-import { formatDate } from "../../lib/format";
 import { getErrorMessage } from "../../services/api";
-import { createGroup, listGroups, type PublicGroup, type GroupRole } from "./api/groupsApi";
+import { createGroup, listGroups, type PublicGroup } from "./api/groupsApi";
+import { GroupCard } from "./components/GroupCard";
 import { validateGroupDescription, validateGroupName } from "./lib/validators";
-
-function roleBadge(role: GroupRole | null): string {
-  switch (role) {
-    case "owner":
-      return "badge--accent";
-    case "admin":
-      return "badge--success";
-    default:
-      return "badge--muted";
-  }
-}
-
-function GroupCard({ group }: { group: PublicGroup }) {
-  return (
-    <Link to={`/groups/${group.id}`} className="link-card">
-      <div className="card group-card">
-        <div className="group-card__head">
-          <Avatar name={group.name} size="lg" />
-          <span className={`badge ${roleBadge(group.myRole)}`}>{group.myRole ?? "member"}</span>
-        </div>
-        <h3 className="group-card__name">{group.name}</h3>
-        {group.description && <p className="group-card__description">{group.description}</p>}
-        <div className="group-card__meta">
-          <span className="group-card__meta-chip">
-            <Icon name="groups" size={14} aria-hidden="true" />
-            {group.memberCount} member{group.memberCount === 1 ? "" : "s"}
-          </span>
-          <span className="group-card__meta-chip">
-            <Icon name="calendar" size={14} aria-hidden="true" />
-            {formatDate(group.createdAt)}
-          </span>
-        </div>
-      </div>
-    </Link>
-  );
-}
 
 export function GroupsPage() {
   const navigate = useNavigate();
@@ -129,6 +91,9 @@ export function GroupsPage() {
         </div>
         {!showForm && (
           <div className="page-header__actions">
+            <Link className="btn btn--ghost" to="/groups/archived">
+              Archived
+            </Link>
             <button className="btn" type="button" onClick={() => setShowForm(true)}>
               New group
             </button>

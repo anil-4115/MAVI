@@ -9,6 +9,7 @@ import {
   leaderIds,
   onExpenseCreated,
   onGroupArchived,
+  onGroupRestored,
   onGroupInvitation,
   onInvitationAccepted,
   onMemberLeft,
@@ -51,9 +52,10 @@ const TYPES = [
   "role_changed",
   "ownership_transferred",
   "group_archived",
+  "group_restored",
   "settlement_recorded",
 ];
-check(NOTIFICATION_TYPES.length === TYPES.length, "catalogue: exactly 9 notification types");
+check(NOTIFICATION_TYPES.length === TYPES.length, "catalogue: exactly 10 notification types");
 for (const t of TYPES) {
   check((NOTIFICATION_TYPES as readonly string[]).includes(t), `catalogue: includes ${t}`);
 }
@@ -109,6 +111,12 @@ check(ownerItems.length === 1 && ownerItems[0].recipientId === "b" && ownerItems
 const gArchive = group([m("a", "owner"), m("b"), m("c"), m("d", "member", "declined")]);
 const archiveItems = onGroupArchived(gArchive, "a");
 check(archiveItems.length === 2 && sameIds(archiveItems.map((i) => i.recipientId), ["b", "c"]), "group_archived: notifies every other active member");
+
+/* ------------------------------- group_restored ---------------------------- */
+const gRestore = group([m("a", "owner"), m("b"), m("c"), m("d", "member", "declined")]);
+const restoreItems = onGroupRestored(gRestore, "a");
+check(restoreItems.length === 2 && sameIds(restoreItems.map((i) => i.recipientId), ["b", "c"]), "group_restored: notifies every other active member");
+check(restoreItems.every((i) => i.type === "group_restored" && i.groupId === "g1" && i.actorId === "a" && i.metadata.groupName === "Test Group"), "group_restored: type/group/actor/groupName set");
 
 /* ----------------------------- settlement_recorded -------------------------- */
 const settleAsThird = onSettlementRecorded(gExp, "x", { id: "s1", payerId: "b", receiverId: "a", amountMinor: 500, currency: "INR" });

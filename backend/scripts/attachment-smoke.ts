@@ -335,7 +335,7 @@ async function main(): Promise<void> {
     const gArcId = ((gArc.json?.data as Jsonable).group as Jsonable).id as string;
     const arcExpense = (((await post(base, `/groups/${gArcId}/expenses`, tokenOwner, groupExpenseBody(owner.id, [owner.id]))).json?.data as Jsonable).expense as Jsonable).id as string;
     const arcPath = `/groups/${gArcId}/expenses/${arcExpense}/attachment`;
-    check((await del(base, `/groups/${gArcId}`, tokenOwner)).status === 200, "ARCHIVE: group archived");
+    check((await patch(base, `/groups/${gArcId}/archive`, tokenOwner, {})).status === 200, "ARCHIVE: group archived");
     check((await upload(base, arcPath, tokenOwner, "late.jpg", JPEG)).status === 409, "ARCHIVE: upload to archived -> 409");
     check((await get(base, arcPath, tokenOwner)).status === 404, "ARCHIVE: get on archived w/o attachment -> 404");
   } finally {

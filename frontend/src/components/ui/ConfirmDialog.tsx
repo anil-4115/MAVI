@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 
 interface ConfirmDialogProps {
   open: boolean;
@@ -8,14 +8,19 @@ interface ConfirmDialogProps {
   cancelLabel?: string;
   tone?: "danger" | "accent";
   busy?: boolean;
+  /** When set, the confirm button stays disabled until this exact word is typed. */
+  requireKeyword?: string;
+  keywordLabel?: string;
   onConfirm: () => void;
   onCancel: () => void;
 }
 
 /**
  * Lightweight modal confirm used for destructive/irreversible group actions
- * (archive, remove member, leave group, transfer ownership). Renders nothing
- * while closed. Uses the shared design tokens and existing button styles.
+ * (archive, permanent delete, remove member, leave group, transfer ownership).
+ * Renders nothing while closed. Uses the shared design tokens and existing
+ * button styles. For the most destructive actions pass `requireKeyword` so the
+ * user must type the keyword (e.g. "DELETE") before confirming.
  */
 export function ConfirmDialog({
   open,
@@ -25,10 +30,19 @@ export function ConfirmDialog({
   cancelLabel = "Cancel",
   tone = "danger",
   busy = false,
+  requireKeyword,
+  keywordLabel,
   onConfirm,
   onCancel,
 }: ConfirmDialogProps) {
   const dialogRef = useRef<HTMLDivElement>(null);
+  const [keywordInput, setKeywordInput] = useState("");
+
+  useEffect(() => {
+    if (open) {
+      setKeywordInput("");
+    }
+  }, [open]);
 
   useEffect(() => {
     if (!open) {
@@ -57,6 +71,7 @@ export function ConfirmDialog({
   }
 
   const confirmClass = tone === "danger" ? "btn btn--danger" : "btn";
+  const keywordConfirmed = !requireKeyword || keywordInput === requireKeyword;
 
   return (
     <div
@@ -78,11 +93,29 @@ export function ConfirmDialog({
       >
         <h2 className="dialog__title">{title}</h2>
         {message && <p className="dialog__message">{message}</p>}
+        {requireKeyword && (
+          <div className="field dialog__keyword">
+            <label htmlFor="dialog-keyword">{keywordLabel ?? `Type ${requireKeyword} to confirm`}</label>
+            <input
+              id="dialog-keyword"
+              type="text"
+              value={keywordInput}
+              autoComplete="off"
+              spellCheck={false}
+              onChange={(event) => setKeywordInput(event.target.value)}
+            />
+          </div>
+        )}
         <div className="dialog__actions">
           <button className="btn btn--secondary" type="button" onClick={onCancel} disabled={busy}>
             {cancelLabel}
           </button>
-          <button className={confirmClass} type="button" onClick={onConfirm} disabled={busy}>
+          <button
+            className={confirmClass}
+            type="button"
+            onClick={onConfirm}
+            disabled={busy || !keywordConfirmed}
+          >
             {busy ? "Working…" : confirmLabel}
           </button>
         </div>

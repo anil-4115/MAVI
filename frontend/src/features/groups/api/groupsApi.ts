@@ -77,8 +77,10 @@ interface InvitePreviewResponse extends ApiEnvelope<{ group: GroupInvitePreview 
   success: true;
 }
 
-export const listGroups = async (): Promise<PublicGroup[]> => {
-  const response = await api.get<GroupsResponse>("/groups");
+export const listGroups = async (status?: "active" | "archived"): Promise<PublicGroup[]> => {
+  const response = await api.get<GroupsResponse>("/groups", {
+    params: status && status !== "active" ? { status } : undefined,
+  });
   return response.data.data.groups;
 };
 
@@ -106,10 +108,24 @@ export const updateGroup = async (
   return response.data.data.group;
 };
 
-/** Owner only on the backend (PATCH-less archive via DELETE). */
+/** Owner only on the backend. */
 export const archiveGroup = async (groupId: string): Promise<PublicGroup> => {
-  const response = await api.delete<GroupResponse>(`/groups/${groupId}`);
+  const response = await api.patch<GroupResponse>(`/groups/${groupId}/archive`);
   return response.data.data.group;
+};
+
+/** Owner only on the backend, and the group must already be archived. */
+export const restoreGroup = async (groupId: string): Promise<PublicGroup> => {
+  const response = await api.patch<GroupResponse>(`/groups/${groupId}/restore`);
+  return response.data.data.group;
+};
+
+/**
+ * Owner only on the backend, and the group must already be archived. This is
+ * irreversible: expenses, settlements, receipts and notifications are removed.
+ */
+export const permanentlyDeleteGroup = async (groupId: string): Promise<void> => {
+  await api.delete<ApiEnvelope<null>>(`/groups/${groupId}`);
 };
 
 /** Owner/admin invite a registered user by id. */

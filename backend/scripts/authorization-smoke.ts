@@ -106,6 +106,8 @@ const settlementBody = (payerId: string, receiverId: string, amountMinor: number
   receiverId,
   amountMinor,
   currency: CURRENCY,
+  // P0 idempotency contract: every settlement create needs a unique key.
+  idempotencyKey: `auz-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
 });
 
 async function createVerifiedUser(name: string): Promise<{ id: string; email: string }> {
