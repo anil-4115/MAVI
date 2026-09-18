@@ -22,7 +22,7 @@ const MAIN_NAV: NavItem[] = [
 ];
 
 const INSIGHTS_NAV: NavItem[] = [
-  { to: "/reports", label: "Analytics", icon: "reports" },
+  { to: "/reports", label: "Reports", icon: "reports" },
   { to: "/notifications", label: "Notifications", icon: "notifications" },
 ];
 
@@ -44,7 +44,7 @@ const HEADER_TITLES: Record<string, { title: string; subtitle: string }> = {
   "/expenses": { title: "Expenses", subtitle: "Personal and group expenses." },
   "/balances": { title: "Balances", subtitle: "Who owes whom, at a glance." },
   "/settlements": { title: "Settlements", subtitle: "Recent settlements across your groups." },
-  "/reports": { title: "Analytics", subtitle: "Understand your spending over time." },
+  "/reports": { title: "Reports", subtitle: "Filter, understand and export your spending." },
   "/notifications": { title: "Notifications", subtitle: "Activity across your groups." },
   "/profile": { title: "Profile", subtitle: "Manage your MAVI account." },
 };

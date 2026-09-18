@@ -158,6 +158,16 @@ Architecture:
 - Tests: `npm run build` clean; NEW `notifications-selftest` 36/36 (pure event builder + recipient-selector tests, no DB); existing `splitting-selftest` 65/65, `balances-selftest` 89/89, `settlements-selftest` 50/50 all unchanged
 - Live smoke (Atlas): `scripts/notifications-smoke.ts` 51/51 (invite→accept→decline, role change, expense, settlement, removal, leave, ownership transfer, archive, mark-read/read-all/pagination/filters/authorization/17-record total); `settlements-smoke.ts` re-verified 48/48; smoke data isolated (`@mavi-smoke.test`) and cleaned up (notifications closed in cleanups)
 
+#### H.9 Reports — COMPLETE
+
+- New `reports` module: `GET /api/reports/summary` (router-level `authenticate`). Read-only and fully DERIVED at request time — no Report collection, no stored aggregates, no new indexes
+- Query contract: `?scope=all|group|personal&groupId=&from=YYYY-MM-DD&to=YYYY-MM-DD`; `from`/`to` are inclusive UTC-day bounds (default = current UTC calendar month); omitted `from`/`to` returns the default range echoed in `range`
+- Authorization & isolation: unauth → 401; a specific `groupId` requires an active membership → uniform 404 for non-members/unknown ids (same convention as every group read); `groupId` alone implies `scope=group` (personal spending never leaks); personal scope is owner-only (`group:null` + `createdBy=actor`); archived groups remain readable/reportable by active members (historical read, matching H.3/H.6 semantics)
+- Aggregation (integer minor units only): totals (`totalSpentMinor`, group/personal split, `expenseCount`), actor rollups (`paidMinor`/`owedMinor`/`netMinor`), completed-settlement count/total scoped to the range, keyword category breakdown (reuses the analytics classifier), per-group rows, and an authorized newest-first `transactions` list (the CSV/PDF export source)
+- Reuse (no duplicated financial logic): analytics `classifySpendingCategory`/`orderedCategories`; balances `computeDebtMatrix` + `applySettlements` + `positionsFromDebtMatrix` for settlement-adjusted actor nets; common `DEFAULT_CURRENCY`; `requireObjectId` guard
+- Validation: bad `scope`/dates/`groupId` format, `from > to`, `from` without `to`, `scope=group` without `groupId`, and `groupId` combined with `scope` not `group` → 400
+- Tests: `scripts/reports-smoke.ts` **81/81** live (authz 401/404, scope/param 400s, range inclusivity + out-of-range exclusion, archived history, group/personal isolation incl. a member's personal never leaking, settlement-adjusted nets, integer-money assertion, transaction typing/sorting); `scripts/export-selftest.ts` **48/48** pure (CSV escaping/CRLF/filename + PDF structure/xref/stream-length/ASCII safety); existing selftests + smokes all unchanged green
+
 ### Frontend
 
 #### Authentication — COMPLETE
@@ -261,6 +271,17 @@ Architecture:
 - Verification: `npm run build` clean (144 modules) and `npx oxlint` clean (no errors; the one new warning is the same app-wide benign `set-state-in-effect` data-fetch category every page has); backend `tsc` clean; backend self-tests green (splitting 65, balances 89, settlements 50, notifications 36); **live HTTP check 81/81** against the running backend covering: 401 for all five endpoints, empty list, create (201; group null / createdBy+payer = owner; currency default INR; single self-share == amount; title trimming; ₹100.50 → 10050 round-trip; missing date defaults to today), 16 validation 400s (empty/missing/blank/121-char title, missing/zero/negative/float/string amount, USD currency, bad date) incl. rejected personal extras (payerId / split / group / participantShares → 400), list ordering newest-first + pagination (page2 + beyond-empty + limit cap 100), detail (200 / invalid id 400 / unknown 404), update (title / amountMinor with self-share re-derivation / date; empty update 400; extra-field 400; unknown → 404), ownership isolation (B's empty list; B detail/update/delete of A's expense → 404 with valid bodies), **no notifications generated** for either user, dashboard integration (personalSpendingMinor = sum after create + after edit; recent list; drops after delete), delete soft-void (list + detail drop, double-delete 404); Vite dev server serves `/expenses/personal` (SPA shell 200); all seed data cleaned (0 leftover `@mavi-f8.test` users/expenses); temp verification script deleted
 - Regression green: notifications-smoke 51/51 and settlements-smoke 48/48 (auth, dashboard, groups create/list/detail, invitations/accept/decline, roles, ownership transfer, archive, expenses, balances conservation, settlements, notifications read/mark-all/filters/pagination, cross-group isolation)
 - Not committed yet — working tree (F.3 + F.4 + F.5 + F.6 + F.7 + F.8) left uncommitted for review
+
+#### F.9 Reports + Export — COMPLETE
+
+- Reworked `ReportsPage` from the thin monthly-analytics wrapper into a full Reports surface (the nav item/section was renamed "Analytics" → "Reports", route `/reports` unchanged); no backend changes beyond the new H.9 endpoint it consumes
+- Filter card: `from`/`to` date inputs (client + server validation, inclusive-day semantics), scope segmented control (All / Personal only), and a group selector (active + archived groups merged from `listGroups`); Apply/Reset with inline validation error for an inverted range
+- Report sections: `ReportSummaryCards` (total/group/personal spend, You paid, Your share, sign-tinted Net position, Settlements), category breakdown reusing `CategoryDonutChart` + `CATEGORY_COLORS`, `ReportGroupBreakdown` (per-group spent / paid / share / net / settlements, archived badge), and a `ReportTransactions` preview (newest-first, truncation note pointing at export); loading `Spinner`, `ErrorState` retry, and `EmptyState` for an empty range
+- Exports (dependency-free — no new npm packages): `src/lib/csv.ts` (RFC 4180 escaping, CRLF records, UTF-8 BOM download, sanitized filenames) and `src/lib/pdf.ts` (minimal PDF 1.4 text writer — catalog/pages/Helvetica + Helvetica-Bold, automatic pagination, correct object offsets/xref/trailer, ASCII/WinAnsi-safe text with `Rs` money); `features/reports/utils/reportExport.ts` maps the authorized `ReportSummary` onto CSV rows / PDF text lines so exports can never disagree with the on-screen integers
+- Conventions honored: backend aggregates every number, the frontend only formats/serializes (`formatMoney`, integer minor units); typed API layer (`reportsApi.ts`) + `useReportSummary` hook; `import type` (verbatimModuleSyntax); no enums; all figures come from the endpoint's already-authorized line items
+- Responsive: filter grid collapses to 2-up ≤760px and single-column ≤420px, transaction rows stack their amount/payer; all themes (light/dark/blue/system) via existing tokens; reuses `.card`/`.summary-grid`/`.summary-card`/`.field`/`.form`/`.btn`/`.badge`/`.segmented`/`.empty-state`/`.error-state`/`.spinner` with a minimal `reports.css`
+- Verification: frontend `npm run build` clean (178 modules) + `npx oxlint` 0 errors (same benign app-wide `set-state-in-effect` data-fetch warning category); backend `npm run build` clean; H.9 `reports-smoke` 81/81 and pure `export-selftest` 48/48; full regression green — all 8 pure selftests (attachment-validation 37, auth-email 39, balances 89, log-redaction 12, notifications 39, password-reset 44, settlements 50, splitting 65) and all 12 live smokes (attachment 48, auth-bruteforce 40, auth-verify 27, authorization 79, group-lifecycle 91, notifications 51, password-reset 38, profile 53, rate-limit 41, reports 81, security-headers 141, settlements 52); smoke data auto-cleaned (`@mavi-reports-smoke.test`)
+- Not committed yet — working tree (F.3–F.9 + T.1–T.4 + H.9) left uncommitted for review
 
 ### Finalization
 
@@ -488,6 +509,7 @@ notifications/
 - H.6 Balances — DONE
 - H.7 Settlements — DONE
 - H.8 Notifications — DONE
+- H.9 Reports — DONE
 
 **Frontend:**
 
@@ -499,6 +521,7 @@ notifications/
 - F.6 Settlements — DONE
 - F.7 Notifications — DONE
 - F.8 Personal expenses — DONE
+- F.9 Reports + Export — DONE
 
 **Final:**
 

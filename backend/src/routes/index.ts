@@ -9,6 +9,7 @@ import balancesRouter from "../modules/balances/balances.routes.js";
 import settlementsRouter from "../modules/settlements/settlement.routes.js";
 import notificationsRouter from "../modules/notifications/notification.routes.js";
 import analyticsRouter from "../modules/analytics/analytics.routes.js";
+import reportsRouter from "../modules/reports/reports.routes.js";
 
 export const buildApiRouter = (limiters: RateLimiters): Router => {
   const router = Router();
@@ -30,6 +31,7 @@ export const buildApiRouter = (limiters: RateLimiters): Router => {
   router.use("/", balancesRouter);
   router.use("/", settlementsRouter);
   router.use("/", analyticsRouter);
+  router.use("/", reportsRouter);
 
   return router;
 };
