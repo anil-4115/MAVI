@@ -266,10 +266,20 @@ export async function removePersonalAttachment(ownerId: string, expenseId: strin
 
 /* ------------------------------ group expenses ---------------------------- */
 
+export interface CreateGroupExpenseOptions {
+  /**
+   * When true, no `expense_created` notifications are emitted. Used by the
+   * recurring generator so automated occurrences do not spam members; manual
+   * expense creation keeps the default (notify) behavior.
+   */
+  suppressNotifications?: boolean;
+}
+
 export async function createGroupExpense(
   groupId: string,
   actorId: string,
   input: CreateExpenseInput,
+  options: CreateGroupExpenseOptions = {},
 ): Promise<PublicExpense> {
   const group = await findGroupOrThrow(groupId);
   ensureWritable(group);
@@ -294,14 +304,16 @@ export async function createGroupExpense(
     voidedBy: null,
   })) as unknown as ExpenseDocument;
 
-  await notify(
-    onExpenseCreated(group, actorId, {
-      id: expense._id.toString(),
-      title: expense.title,
-      amountMinor: expense.amountMinor,
-      currency: expense.currency,
-    }),
-  );
+  if (!options.suppressNotifications) {
+    await notify(
+      onExpenseCreated(group, actorId, {
+        id: expense._id.toString(),
+        title: expense.title,
+        amountMinor: expense.amountMinor,
+        currency: expense.currency,
+      }),
+    );
+  }
 
   return toPublicExpense(expense);
 }

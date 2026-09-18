@@ -19,6 +19,7 @@ import { BalancesPage } from "./features/balances/BalancesPage";
 import { SettlementsPage } from "./features/settlements/SettlementsPage";
 import { ReportsPage } from "./features/reports/ReportsPage";
 import { ProfilePage } from "./features/profile/ProfilePage";
+import { RecurringPage } from "./features/recurring/RecurringPage";
 import { ToolsPage } from "./features/tools/ToolsPage";
 import { ToastProvider } from "./components/ui/Toast";
 import "./styles/ui.css";
@@ -78,6 +79,8 @@ function AppRoutes() {
         <Route path="/reports" element={<ReportsPage />} />
         <Route path="/notifications" element={<NotificationsPage />} />
         <Route path="/profile" element={<ProfilePage />} />
+        {/* Static segment must beat the dynamic /tools/:tool placeholder. */}
+        <Route path="/tools/recurring" element={<RecurringPage />} />
         <Route path="/tools/:tool" element={<ToolsPage />} />
       </Route>
 

@@ -47,6 +47,7 @@ const HEADER_TITLES: Record<string, { title: string; subtitle: string }> = {
   "/reports": { title: "Reports", subtitle: "Filter, understand and export your spending." },
   "/notifications": { title: "Notifications", subtitle: "Activity across your groups." },
   "/profile": { title: "Profile", subtitle: "Manage your MAVI account." },
+  "/tools/recurring": { title: "Recurring Expenses", subtitle: "Automate recurring bills for yourself or a group." },
 };
 
 function NavLinkItem({ item, onNavigate }: { item: NavItem; onNavigate?: () => void }) {

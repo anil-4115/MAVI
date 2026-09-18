@@ -20,10 +20,11 @@ const PAGE_SIZE = 20;
 
 interface PersonalExpensesPanelProps {
   autoAdd?: boolean;
+  onFormClosed?: () => void;
 }
 
 /** Personal expenses list + add/edit form, without the page chrome. */
-export function PersonalExpensesPanel({ autoAdd = false }: PersonalExpensesPanelProps) {
+export function PersonalExpensesPanel({ autoAdd = false, onFormClosed }: PersonalExpensesPanelProps) {
   const [expenses, setExpenses] = useState<PublicExpense[] | null>(null);
   const [total, setTotal] = useState(0);
   const [error, setError] = useState<string | null>(null);
@@ -52,6 +53,17 @@ export function PersonalExpensesPanel({ autoAdd = false }: PersonalExpensesPanel
     void loadFirstPage();
   }, [loadFirstPage]);
 
+  /* Open the create form whenever the parent raises `autoAdd` (quick-add).
+     State alone used the mount-time value, so a parent could hide its trigger
+     while the form never appeared. */
+  useEffect(() => {
+    if (autoAdd) {
+      setEditing(null);
+      setShowForm(true);
+      setActionError(null);
+    }
+  }, [autoAdd]);
+
   const openCreateForm = () => {
     setEditing(null);
     setShowForm(true);
@@ -67,6 +79,7 @@ export function PersonalExpensesPanel({ autoAdd = false }: PersonalExpensesPanel
   const closeForm = () => {
     setShowForm(false);
     setEditing(null);
+    onFormClosed?.();
   };
 
   const handleFormCompleted = () => {

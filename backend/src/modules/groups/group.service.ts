@@ -5,6 +5,7 @@ import { Expense } from "../expenses/expense.model.js";
 import { Settlement } from "../settlements/settlement.model.js";
 import { Notification } from "../notifications/notification.model.js";
 import { deleteImage } from "../expenses/attachment.service.js";
+import { deleteGroupRecurringData, pauseRulesForLeavingMember } from "../recurring/recurring.service.js";
 import { ApiError } from "../../utils/ApiError.js";
 import { DEFAULT_CURRENCY } from "../common/money.js";
 import { assertOwnerInvariant, type AddMemberInput, type CreateGroupInput, type RoleInput, type UpdateGroupInput } from "./group.validation.js";
@@ -292,6 +293,12 @@ export async function permanentlyDeleteGroup(groupId: string, actorId: string): 
   await Expense.deleteMany({ group: groupObjectId });
   await Notification.deleteMany({ group: groupObjectId });
 
+  // Recurring rules + their generation ledger are group-owned; remove them so
+  // no orphaned rules survive the delete. Generated historical expenses are
+  // intentionally NOT touched beyond the Expense.deleteMany above (the group
+  // delete removes its own expenses, as it always has).
+  await deleteGroupRecurringData(groupId);
+
   for (const fileId of fileIds) {
     await deleteImage(fileId);
   }
@@ -437,6 +444,11 @@ export async function removeMember(
   target.status = "declined";
   assertOwnerInvariant(group.members);
   await group.save();
+
+  // A member who leaves/is removed can no longer be a payer/participant; pause
+  // their rules so generation does not repeatedly fail. Their rules and all
+  // generated history are preserved.
+  await pauseRulesForLeavingMember(groupId, targetUserId);
 
   await notify(self ? onMemberLeft(group, actorId) : onMemberRemoved(group, actorId, targetUserId));
 }

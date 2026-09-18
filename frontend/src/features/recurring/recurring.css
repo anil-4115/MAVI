@@ -1,0 +1,86 @@
+/* Recurring Expenses page (`/tools/recurring`). Uses the shared design tokens
+   from src/index.css so it adapts to every theme (light/dark) automatically. */
+
+.recurring-toolbar {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--sp-3);
+  margin-bottom: var(--sp-4);
+  flex-wrap: wrap;
+}
+
+.recurring-toolbar__scope {
+  margin: 0;
+  min-width: 220px;
+}
+
+.recurring-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.recurring-row {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+  padding: var(--sp-4);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--surface-2);
+}
+
+.recurring-row__main {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--sp-3);
+}
+
+.recurring-row__main .row__primary {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  flex-wrap: wrap;
+  margin: 0;
+}
+
+.recurring-row__amount {
+  white-space: nowrap;
+  font-weight: 600;
+  color: var(--text-h);
+}
+
+.recurring-row__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-2);
+}
+
+.recurring-row__actions .btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+@media (max-width: 560px) {
+  .recurring-toolbar {
+    align-items: stretch;
+  }
+
+  .recurring-toolbar__scope {
+    flex: 1;
+  }
+
+  .recurring-row__main {
+    flex-direction: column;
+  }
+
+  .recurring-row__amount {
+    font-size: var(--fs-lg);
+  }
+}

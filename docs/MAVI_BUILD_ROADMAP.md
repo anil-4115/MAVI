@@ -168,6 +168,20 @@ Architecture:
 - Validation: bad `scope`/dates/`groupId` format, `from > to`, `from` without `to`, `scope=group` without `groupId`, and `groupId` combined with `scope` not `group` → 400
 - Tests: `scripts/reports-smoke.ts` **81/81** live (authz 401/404, scope/param 400s, range inclusivity + out-of-range exclusion, archived history, group/personal isolation incl. a member's personal never leaking, settlement-adjusted nets, integer-money assertion, transaction typing/sorting); `scripts/export-selftest.ts` **48/48** pure (CSV escaping/CRLF/filename + PDF structure/xref/stream-length/ASCII safety); existing selftests + smokes all unchanged green
 
+#### H.10 Recurring Expenses — COMPLETE
+
+- New `recurring` module: `RecurringRule` (definition/schedule) + `RecurringGeneration` idempotency ledger; **no derived balances stored** (rules never hold balance data). Supports personal rules (`group:null`, payer = owner) and group rules (all six split methods)
+- Frequencies `daily|weekly|monthly|yearly`; MVP interval fixed at **1** (validated, explicitly rejected otherwise). Schedules use UTC day keys (`YYYY-MM-DD`); generated expenses get `expenseDate` at UTC midnight
+- Pure recurrence engine (`recurrence.ts`, no Express/Mongo/HTTP): `isValidDayKey`, `dayKeyToUtcDate`/`utcDateToDayKey`, `todayUtcDayKey`, `lastDayOfMonth`, `addDays`, `addMonthsClamped`/`addYearsClamped`, `advanceOccurrence`, `firstOccurrenceOnOrAfter`; **month-end clamps from the current day** (Jan 31 → Feb 28/29 → Mar 29/28)
+- APIs (all under `authenticate`): personal `GET/POST /api/recurring/personal`, `GET/PATCH/DELETE /api/recurring/personal/:id`, `POST …/:id/pause|resume|generate-now`; group `GET/POST /api/groups/:groupId/recurring`, `GET/PATCH/DELETE …/:ruleId`, `POST …/:ruleId/pause|resume|generate-now`
+- Authorization: group rules are **creator-or-owner** manageable (owner full control, admin/member manage their own rule); non-members + invited users get uniform **404**; payer/participants must be active members; archived groups block writes (409) but remain readable
+- Idempotency: unique `{rule, occurrenceKey}` ledger row is **claimed before** expense creation, so a double-clicked Generate Now or overlapping scheduler can never duplicate; on creation failure the claim is removed and the error rethrown; `nextOccurrence` advances via a conditional update guarded by the observed value
+- Missed occurrences are **skipped, never backfilled** (walk `nextOccurrence` to today, generate only on an exact match); rules deactivate past `endDate`; manual **Generate Now** uses the exact same idempotent path
+- Generated recurring expenses are **normal `Expense` documents** created through the existing `createGroupExpense`/`createPersonalExpense` services — no second financial calculation path; group generation passes `suppressNotifications` (no per-occurrence notifications, no new notification type; manual expense notifications unchanged)
+- Lifecycle integration: removing/leaving a member **pauses** their group rules; permanent group delete cascades rules + ledger but **keeps already-generated expenses**; rule/ledger deletion never deletes generated expenses; pause/resume recomputes the next valid occurrence and deactivates exhausted rules
+- Scheduler: Railway **cron one-shot** script `scripts/run-recurring.ts` (`npm run recurring:run`) processes all due rules, logs per-rule failures without sensitive data, and exits non-zero when any rule failed (no in-process timers/node-cron)
+- Tests: backend `npm run build` clean; `scripts/recurring-selftest.ts` **48/48** pure (date/clamp/advance/validation); `scripts/recurring-smoke.ts` **113/113** live (CRUD + authz, idempotency + ledger unique index, notification suppression + manual regression, missed-skip, removed-participant safe failure, creator-leave pause, archive block + restore resume, permanent-delete cascade, end date, personal generation); regression green (group-lifecycle 91/91, notifications 51/51, reports 81/81)
+
 ### Frontend
 
 #### Authentication — COMPLETE
@@ -282,6 +296,18 @@ Architecture:
 - Responsive: filter grid collapses to 2-up ≤760px and single-column ≤420px, transaction rows stack their amount/payer; all themes (light/dark/blue/system) via existing tokens; reuses `.card`/`.summary-grid`/`.summary-card`/`.field`/`.form`/`.btn`/`.badge`/`.segmented`/`.empty-state`/`.error-state`/`.spinner` with a minimal `reports.css`
 - Verification: frontend `npm run build` clean (178 modules) + `npx oxlint` 0 errors (same benign app-wide `set-state-in-effect` data-fetch warning category); backend `npm run build` clean; H.9 `reports-smoke` 81/81 and pure `export-selftest` 48/48; full regression green — all 8 pure selftests (attachment-validation 37, auth-email 39, balances 89, log-redaction 12, notifications 39, password-reset 44, settlements 50, splitting 65) and all 12 live smokes (attachment 48, auth-bruteforce 40, auth-verify 27, authorization 79, group-lifecycle 91, notifications 51, password-reset 38, profile 53, rate-limit 41, reports 81, security-headers 141, settlements 52); smoke data auto-cleaned (`@mavi-reports-smoke.test`)
 - Not committed yet — working tree (F.3–F.9 + T.1–T.4 + H.9) left uncommitted for review
+
+#### F.10 Recurring Expenses UI — COMPLETE
+
+- The `/tools/recurring` placeholder is replaced by a real **RecurringPage** (registered as a static route **before** the dynamic `/tools/:tool`, with an AppLayout header title); no backend changes beyond consuming H.10
+- Shared split UI extracted so expenses and recurring rules can never drift: `features/expenses/lib/splitForm.ts` (pure `EntryValues`/`ItemDraft`/stats/`buildSplitPayload`/`validateSplit`/`readEntryByMethod`) and `features/expenses/components/SplitEditor.tsx` (presentational, prop-driven); `ExpenseForm` refactored onto both with **no behavior/validation-message change**
+- API layer `features/recurring/api/recurringApi.ts`: typed `PublicRecurringRule`/`RuleRunResult` + personal/group list/create/update/delete/pause/resume/generate-now (components never call axios directly); `hooks/useRecurring.ts` branches all calls by a memoized **scope** (`personal` or one `groupId`) and keeps the local list in sync
+- `RecurringPage`: "Showing" scope selector (Personal + each group, archived labelled) with per-group currency/read-only handling, inline create/edit form, loading/error/empty states, success/error toasts, and `ConfirmDialog`-gated delete (message clarifies generated expenses are kept)
+- `RecurringForm`: personal (title/amount/frequency/start/end) and group (adds payer + all six split methods via the shared `SplitEditor`) with validation mirroring the backend (title 1–120, positive amount, valid/ordered dates, valid payer, split rules); **no category field** invented; start/end sent as `YYYY-MM-DD` day keys; busy/error handling consistent with `ExpenseForm`
+- `RecurringRow`: title + active/paused badge, frequency/split/payer and next-occurrence (rendered from the UTC day key without a local-timezone day shift), amount, and **Generate now / Pause / Resume / Edit / Delete** actions gated to `rule.canManage && !archived` (backend remains authoritative); `recurring.css` uses existing design tokens so it adapts to all themes and stacks cleanly on mobile
+- Verification: frontend `npm run build` clean (186 modules) and `npx oxlint` 0 errors (only the pre-existing benign `set-state-in-effect` data-fetch warnings); backend `npm run build` clean; H.10 `recurring-selftest` 48/48 + `recurring-smoke` 113/113; regression green (group-lifecycle 91/91, notifications 51/51, reports 81/81); browser/responsive/theme manual pass still owed to the reviewer
+- Expense **quick-add** hardening shipped alongside: the global bottom-nav Add on `/expenses` now opens the personal create form (Personal section) or the selected group's create-expense form (Group section, with a group selector defaulting to the first group), and shows an info toast instead of a silent no-op when no group exists
+- Committed in the `feat: complete recurring expenses and expense quick-add` milestone
 
 ### Finalization
 
@@ -510,6 +536,7 @@ notifications/
 - H.7 Settlements — DONE
 - H.8 Notifications — DONE
 - H.9 Reports — DONE
+- H.10 Recurring Expenses — DONE
 
 **Frontend:**
 
@@ -522,6 +549,7 @@ notifications/
 - F.7 Notifications — DONE
 - F.8 Personal expenses — DONE
 - F.9 Reports + Export — DONE
+- F.10 Recurring Expenses UI — DONE
 
 **Final:**
 
@@ -578,45 +606,32 @@ When returning to the project after hours/days:
 
 ## CURRENT NEXT STEP
 
-### F.8 — Personal Expenses UI (COMPLETE)
+### Recently completed
 
-A dedicated Personal Expenses page at `/expenses/personal` (sidebar + mobile
-nav) lets the authenticated user list, create, edit, and soft-delete their own
-expenses via the H.5 personal-expense APIs — served through the shared expenses
-API/service layer, with a create/edit form (title, INR amount, date) whose
-validation mirrors the backend, ConfirmDialog-gated deletion, pagination,
-loading/error/empty/success states, and list refresh after every mutation — all
-verified 81/81 against the running backend plus regression smoke (51/51 +
-48/48). Working tree (F.3 + F.4 + F.5 + F.6 + F.7 + F.8) uncommitted, pending
-review.
+F.3–F.9 and T.1–T.4 are DONE and verified (see the Finalization section above);
+the reports/export milestone (H.9 + F.9) and all prior frontend work through F.9
+were committed and pushed. The P4 Recurring Expenses milestone (H.10 + F.10) is
+implemented, verified, and committed (`feat: complete recurring expenses and
+expense quick-add`), together with the `/expenses` quick-add fixes.
 
-**T.1 End-to-end testing — DONE**: integrated HTTP-only E2E suite **176/176
-PASS** against the running backend + Atlas (auth, groups, all six split
-methods, balances, settlements, notifications, personal expenses, dashboard,
-DB data-integrity invariants, 0-leftover cleanup), all navigation routes serve
-the SPA shell (200), regression smoke (51/51 + 48/48) and backend self-tests
-(65/89/50/36) green, frontend build (144 modules) + oxlint and backend `tsc`
-clean, temp script deleted, nothing committed. F.3–F.8 + T.1 remain
-uncommitted for review.
+**P4 H.10 + F.10 — Recurring Expenses (COMPLETE)**: personal and group recurring
+rules with a pure UTC-day-key recurrence engine (month-end clamp, missed
+occurrences skipped, no backfill), an idempotency ledger (`{rule, occurrenceKey}`
+unique, claimed before expense creation), full creator-or-owner authz, and
+generated expenses created through the existing expense services as normal
+`Expense` documents (notifications suppressed for group generation, none for
+personal). Group lifecycle integration pauses a leaving member's rules and
+cascades rules + ledger on permanent delete while keeping generated expenses.
+A Railway cron one-shot (`npm run recurring:run`) plus manual Generate Now share
+the same idempotent path. Frontend `/tools/recurring` replaces the placeholder
+with a Personal/group-scoped page and shared split editing. Verified: backend
+`tsc` clean, recurring-selftest 48/48, recurring-smoke 113/113, regression
+(group-lifecycle 91/91, notifications 51/51, reports 81/81), frontend build 186
+modules + oxlint 0 errors. P4 is committed (including the `/expenses` quick-add fixes).
 
-**T.2 Security/edge-case testing — DONE**: live HTTP-only security/edge-case
-suite **470/470 PASS** against the running backend + Atlas (authentication,
-authorization/IDOR, input validation, money/data integrity, DB/resource
-safety, security config). Every first-run FAIL (18) was an incorrect script
-expectation — **no genuine vulnerabilities or product bugs found**; documented
-hardening/edge observations only (unknown-route 401-from-router-level-auth,
-archived groups still allow member-management writes, CORS `*` with bearer
-tokens, no login rate-limit, production message sanitization, >2^53 robustness).
-Regression green (notifications-smoke 51/51, settlements-smoke 48/48; self-tests
-65/89/50/36; frontend build 144 modules + oxlint, backend `tsc` clean). Cleanup
-verified 0 leftover test data (plus orphaned "H8 Smoke Group"/`@f1verify.test`
-artifacts from earlier crashed runs purged; real user data untouched), temp
-script deleted, nothing committed. F.3–F.8 + T.1 + T.2 remain uncommitted for
-review.
-
-**Next major step: T.5 — Deployment** (do not start without approval). No F.9 —
-MAVI is feature-complete through F.8. T.4 (Production build) is complete — frontend
-API base URL is env-configurable via `VITE_API_URL`, production backend verified
-(`npm start` on `PORT`/`NODE_ENV=production`, sanitized errors, /api/health green),
-and the served production build passed the live sweep (8/8, 0 console errors).
-See the T.4 DONE note above.
+**Next major step: T.5 — Deployment** (do not start without approval). The
+feature roadmap is complete through H.10/F.10; T.4 (Production build) is done —
+frontend API base URL is env-configurable via `VITE_API_URL`, production backend
+verified (`npm start` on `PORT`/`NODE_ENV=production`, sanitized errors, /api/health
+green), and the served production build passed the live sweep (8/8, 0 console
+errors). See the T.4 DONE note above.

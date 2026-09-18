@@ -1,9 +1,10 @@
-import { useCallback, useEffect, useState } from "react";
-import { Link, useSearchParams } from "react-router-dom";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { Avatar } from "../../components/ui/Avatar";
 import { EmptyState } from "../../components/ui/EmptyState";
 import { ErrorState } from "../../components/ui/ErrorState";
 import { Skeleton } from "../../components/ui/Skeleton";
+import { useToast } from "../../components/ui/Toast";
 import { formatDate } from "../../lib/format";
 import { formatMoney } from "../../lib/money";
 import { getErrorMessage } from "../../services/api";
@@ -20,10 +21,19 @@ const SECTIONS: { id: ExpensesSection; label: string }[] = [
 
 const GROUP_LIMIT = 5;
 
-function GroupExpensesOverview() {
+interface GroupExpensesOverviewProps {
+  /** Increments when the bottom-nav quick-add targets the group section. */
+  quickAddToken: number;
+}
+
+function GroupExpensesOverview({ quickAddToken }: GroupExpensesOverviewProps) {
+  const navigate = useNavigate();
+  const { addToast } = useToast();
   const [groups, setGroups] = useState<PublicGroup[] | null>(null);
   const [expensesByGroup, setExpensesByGroup] = useState<Record<string, PublicExpense[]>>({});
   const [error, setError] = useState<string | null>(null);
+  const [selectedGroupId, setSelectedGroupId] = useState<string | null>(null);
+  const handledQuickAdd = useRef(0);
 
   const load = useCallback(async () => {
     setError(null);
@@ -46,6 +56,28 @@ function GroupExpensesOverview() {
   useEffect(() => {
     void load();
   }, [load]);
+
+  /* Keep a default target selected so quick-add is predictable once loaded. */
+  useEffect(() => {
+    if (groups && groups.length > 0 && !selectedGroupId) {
+      setSelectedGroupId(groups[0].id);
+    }
+  }, [groups, selectedGroupId]);
+
+  /* Bottom-nav quick-add: open the selected group's create-expense form. Waits
+     for the group list to load, and never silently does nothing. */
+  useEffect(() => {
+    if (quickAddToken === 0 || quickAddToken === handledQuickAdd.current || !groups) {
+      return;
+    }
+    handledQuickAdd.current = quickAddToken;
+    if (groups.length === 0) {
+      addToast("Create a group first to add a shared expense.", "info");
+      return;
+    }
+    const target = groups.find((group) => group.id === selectedGroupId) ?? groups[0];
+    navigate(`/groups/${target.id}?tab=expenses&add=1`);
+  }, [quickAddToken, groups, selectedGroupId, navigate, addToast]);
 
   if (error) {
     return <ErrorState message={error} onRetry={() => void load()} />;
@@ -77,6 +109,23 @@ function GroupExpensesOverview() {
 
   return (
     <div className="expenses-overview">
+      <div className="expenses-overview__toolbar">
+        <div className="field expenses-overview__scope">
+          <label htmlFor="expense-group-scope">Group</label>
+          <select
+            id="expense-group-scope"
+            value={selectedGroupId ?? ""}
+            onChange={(event) => setSelectedGroupId(event.target.value)}
+          >
+            {groups.map((group) => (
+              <option key={group.id} value={group.id}>
+                {group.name}
+                {group.archived ? " (archived)" : ""}
+              </option>
+            ))}
+          </select>
+        </div>
+      </div>
       {groups.map((group) => {
         const rows = expensesByGroup[group.id] ?? [];
         return (
@@ -130,12 +179,17 @@ export function ExpensesPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const addFlag = searchParams.get("add") === "1";
   const [section, setSection] = useState<ExpensesSection>("personal");
+  const [groupQuickAddToken, setGroupQuickAddToken] = useState(0);
 
   useEffect(() => {
-    if (addFlag) {
-      setSearchParams({}, { replace: true });
+    if (!addFlag) {
+      return;
     }
-  }, [addFlag, setSearchParams]);
+    setSearchParams({}, { replace: true });
+    if (section === "group") {
+      setGroupQuickAddToken((token) => token + 1);
+    }
+  }, [addFlag, section, setSearchParams]);
 
   return (
     <div className="app-page">
@@ -175,7 +229,7 @@ export function ExpensesPage() {
 
       {section === "personal" && <PersonalExpensesPanel autoAdd={addFlag} />}
 
-      {section === "group" && <GroupExpensesOverview />}
+      {section === "group" && <GroupExpensesOverview quickAddToken={groupQuickAddToken} />}
     </div>
   );
 }

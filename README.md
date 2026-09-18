@@ -17,6 +17,7 @@ Split group expenses and track who owes whom. MAVI is a MERN (MongoDB, Express, 
 - **Settlements** — record a payer → receiver settlement with a note, plus cancellation (creator or owner), with notifications and balance re-derivation on every change.
 - **Notifications** — in-app notifications for invitations, accepted/declined invites, role changes, expenses, settlements, removals, leaves, ownership transfers, and archives; unread counts, read/unread filters, mark-one/mark-all read, pagination, and an activity view.
 - **Personal expenses** — an isolated, per-user expense list independent of any group, with create/edit/soft-delete.
+- **Recurring expenses** — automate personal or group bills (daily / weekly / monthly / yearly) using any of the six splitting methods; rules generate normal expenses on schedule (idempotent, missed occurrences skipped), support pause/resume and manual "Generate now", and are managed by the rule creator or the group owner.
 - **Dashboard** — net balance hero, outstanding summary, recent activity, recent settlements, and your groups overview.
 - **Activity / history** — recent activity feed across your groups.
 

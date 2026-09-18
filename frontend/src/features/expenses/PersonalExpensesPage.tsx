@@ -22,7 +22,7 @@ export function PersonalExpensesPage() {
         )}
       </header>
 
-      <PersonalExpensesPanel autoAdd={showForm} />
+      <PersonalExpensesPanel autoAdd={showForm} onFormClosed={() => setShowForm(false)} />
     </div>
   );
 }
