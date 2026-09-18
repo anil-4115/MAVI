@@ -1,11 +1,11 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { Avatar } from "../../components/ui/Avatar";
 import { formatDate } from "../../lib/format";
 import { useAuth } from "../auth/useAuth";
+import { useTheme } from "../../theme/ThemeProvider";
+import type { ThemePreference } from "../../theme/ThemeProvider";
 import "./profile.css";
-
-type ThemePreference = "system" | "light" | "dark";
 
 type ProfileTab = "profile" | "settings" | "help";
 
@@ -15,35 +15,11 @@ const TABS: { id: ProfileTab; label: string }[] = [
   { id: "help", label: "Help & Support" },
 ];
 
-const THEME_STORAGE_KEY = "mavi-theme";
-
-function applyTheme(preference: ThemePreference): void {
-  const root = document.documentElement;
-  if (preference === "system") {
-    root.removeAttribute("data-theme");
-  } else {
-    root.setAttribute("data-theme", preference);
-  }
-}
-
-function useThemePreference(): [ThemePreference, (next: ThemePreference) => void] {
-  const [preference, setPreference] = useState<ThemePreference>(() => {
-    const stored = localStorage.getItem(THEME_STORAGE_KEY);
-    return stored === "light" || stored === "dark" ? stored : "system";
-  });
-
-  useEffect(() => {
-    applyTheme(preference);
-    localStorage.setItem(THEME_STORAGE_KEY, preference);
-  }, [preference]);
-
-  return [preference, setPreference];
-}
-
 const THEME_OPTIONS: { id: ThemePreference; label: string }[] = [
-  { id: "system", label: "System" },
+  { id: "blue", label: "Blue + White" },
   { id: "light", label: "Light" },
   { id: "dark", label: "Dark" },
+  { id: "system", label: "System" },
 ];
 
 function ProfileInfo() {
@@ -78,7 +54,7 @@ function ProfileInfo() {
 }
 
 function SettingsTab() {
-  const [preference, setPreference] = useThemePreference();
+  const { preference, setPreference } = useTheme();
 
   return (
     <div className="profile-settings">

@@ -48,6 +48,7 @@ const netOf = async (groupId: string, actorId: string, userId: string): Promise<
   return balances.members.find((m) => m.userId === userId)?.netMinor;
 };
 
+let idempotencyCounter = 0;
 const settleInput = (payerId: string, receiverId: string, amountMinor: number, note?: string) => ({
   payerId,
   receiverId,
@@ -55,6 +56,7 @@ const settleInput = (payerId: string, receiverId: string, amountMinor: number, n
   currency: "INR",
   date: new Date(),
   note,
+  idempotencyKey: `smoke-${++idempotencyCounter}-${Date.now()}`,
 });
 
 async function main(): Promise<void> {
@@ -261,6 +263,25 @@ async function main(): Promise<void> {
     const aNet = g1After.members.find((m) => m.userId === aId)?.netMinor;
     check(aNet === 238, `J.cross: group1 balances unaffected by group2 settlement (A = 238, got ${aNet})`);
     check(!g1After.settlements.some((s) => s.groupId === g2), "J.cross: group1 settlement list excludes group2");
+
+    /* ---------------------------- Test K: idempotency ------------------------ */
+    const idemKey = `smoke-idem-${Date.now()}`;
+    const k1 = await createSettlement(g2, cId, { ...settleInput(cId, aId, 60, "once"), idempotencyKey: idemKey });
+    const k1Replay = await createSettlement(g2, cId, { ...settleInput(cId, aId, 60, "once"), idempotencyKey: idemKey });
+    check(k1Replay.id === k1.id && k1Replay.amountMinor === 60, "K.replay: same key returns the original settlement (no duplicate)");
+    const k1Conflict = await createSettlement(g2, cId, { ...settleInput(cId, aId, 999, "conflict"), idempotencyKey: idemKey });
+    check(k1Conflict.id === k1.id && k1Conflict.amountMinor === 60, "K.conflict: same key, different payload still returns the original");
+    const k2 = await createSettlement(g2, cId, { ...settleInput(cId, aId, 60, "twice"), idempotencyKey: `${idemKey}-2` });
+    check(k2.id !== k1.id, "K.distinct: a new key creates a new settlement even with identical fields");
+    const settleNotifsA = await Notification.find({
+      group: new Types.ObjectId(g2),
+      recipient: new Types.ObjectId(aId),
+      type: "settlement_recorded",
+    }).lean();
+    check(
+      settleNotifsA.length === 3,
+      `K.notify: replays did not re-emit notifications (got ${settleNotifsA.length}, expected 3)`,
+    );
 
     /* ------------------------ invariant sanity check ------------------------- */
     const finalBal = await getGroupBalances(g1, aId);

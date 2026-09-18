@@ -10,6 +10,11 @@ export interface ISettlement {
   currency: string;
   date: Date;
   note?: string;
+  /**
+   * Client-owned idempotency key (unique per group). Replaying the same key
+   * returns the original record instead of creating a duplicate.
+   */
+  idempotencyKey?: string;
   createdBy: Types.ObjectId;
   status: SettlementStatus;
 }
@@ -25,6 +30,7 @@ const settlementSchema = new Schema<ISettlement>(
     currency: { type: String, required: true, enum: [DEFAULT_CURRENCY], default: DEFAULT_CURRENCY },
     date: { type: Date, required: true },
     note: { type: String, trim: true, maxlength: 300, default: undefined },
+    idempotencyKey: { type: String, trim: true, maxlength: 100, default: undefined },
     createdBy: { type: Schema.Types.ObjectId, ref: "User", required: true },
     status: { type: String, enum: SETTLEMENT_STATUSES, required: true, default: "completed" },
   },
@@ -32,5 +38,8 @@ const settlementSchema = new Schema<ISettlement>(
 );
 
 settlementSchema.index({ group: 1, date: -1 });
+// Sparse so legacy records without a key are untouched; the key only needs to
+// be unique within a group (the same client key is fine across groups).
+settlementSchema.index({ group: 1, idempotencyKey: 1 }, { unique: true, sparse: true });
 
 export const Settlement = model<ISettlement>("Settlement", settlementSchema);

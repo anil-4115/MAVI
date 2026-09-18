@@ -46,8 +46,19 @@ const getNote = (value: unknown): string | undefined => {
   return note === "" ? undefined : note;
 };
 
+const getIdempotencyKey = (value: unknown): string => {
+  if (typeof value !== "string") {
+    throw new ApiError(400, "idempotencyKey is required to prevent duplicate settlements");
+  }
+  const key = value.trim();
+  if (key.length < 8 || key.length > 100) {
+    throw new ApiError(400, "idempotencyKey must be between 8 and 100 characters");
+  }
+  return key;
+};
+
 export function validateCreateSettlement(body: unknown): CreateSettlementInput {
-  const { payerId, receiverId, amountMinor, currency, date, note } = (body ?? {}) as Record<string, unknown>;
+  const { payerId, receiverId, amountMinor, currency, date, note, idempotencyKey } = (body ?? {}) as Record<string, unknown>;
 
   const payer = getUserId(payerId, "payer");
   const receiver = getUserId(receiverId, "receiver");
@@ -62,6 +73,7 @@ export function validateCreateSettlement(body: unknown): CreateSettlementInput {
     currency: getCurrency(currency),
     date: getDate(date),
     note: getNote(note),
+    idempotencyKey: getIdempotencyKey(idempotencyKey),
   };
 }
 
@@ -80,6 +92,7 @@ export function assertValidSettlementInput(input: CreateSettlementInput): void {
   getCurrency(input.currency);
   getDate(input.date);
   getNote(input.note);
+  getIdempotencyKey(input.idempotencyKey);
 }
 
 /**

@@ -62,6 +62,12 @@ const getOwnerId = (group: GroupDocument): string | null => {
   return owner ? owner.userId.toString() : null;
 };
 
+/**
+ * Records a settlement. Idempotent per (group, idempotencyKey): replaying a
+ * key returns the original record (even if the payload differs) instead of
+ * creating a duplicate, and only a genuinely new record emits notifications.
+ * The sparse unique index also absorbs concurrent duplicates (E11000).
+ */
 export async function createSettlement(
   groupId: string,
   actorId: string,
@@ -76,17 +82,44 @@ export async function createSettlement(
   assertParticipantActive(group, input.payerId, "Payer");
   assertParticipantActive(group, input.receiverId, "Receiver");
 
-  const settlement = (await Settlement.create({
-    group: new Types.ObjectId(groupId),
-    payerId: new Types.ObjectId(input.payerId),
-    receiverId: new Types.ObjectId(input.receiverId),
-    amountMinor: input.amountMinor,
-    currency: input.currency,
-    date: input.date,
-    note: input.note,
-    createdBy: new Types.ObjectId(actorId),
-    status: "completed",
-  })) as unknown as SettlementDocument;
+  const groupObjectId = new Types.ObjectId(groupId);
+
+  const existing = await Settlement.findOne({
+    group: groupObjectId,
+    idempotencyKey: input.idempotencyKey,
+  });
+  if (existing) {
+    return toPublicSettlement(existing as unknown as SettlementDocument);
+  }
+
+  let settlement: SettlementDocument;
+  try {
+    const created = (await Settlement.create({
+      group: groupObjectId,
+      payerId: new Types.ObjectId(input.payerId),
+      receiverId: new Types.ObjectId(input.receiverId),
+      amountMinor: input.amountMinor,
+      currency: input.currency,
+      date: input.date,
+      note: input.note,
+      idempotencyKey: input.idempotencyKey,
+      createdBy: new Types.ObjectId(actorId),
+      status: "completed",
+    })) as unknown as SettlementDocument;
+    settlement = created;
+  } catch (err) {
+    if ((err as { code?: number }).code !== 11000) {
+      throw err;
+    }
+    const raced = await Settlement.findOne({
+      group: groupObjectId,
+      idempotencyKey: input.idempotencyKey,
+    });
+    if (!raced) {
+      throw err;
+    }
+    return toPublicSettlement(raced as unknown as SettlementDocument);
+  }
 
   await notify(
     onSettlementRecorded(group, actorId, {

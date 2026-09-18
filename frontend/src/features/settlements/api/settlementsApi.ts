@@ -34,7 +34,21 @@ export interface CreateSettlementPayload {
   /** ISO date; defaults to now on the backend when omitted. */
   date?: string;
   note?: string;
+  /**
+   * One idempotency key per logical submission (reused on retry). The backend
+   * enforces it, so a double click or a resend after a network blip can never
+   * create a duplicate settlement.
+   */
+  idempotencyKey: string;
 }
+
+/** A fresh key for one logical settlement submission. */
+export const newIdempotencyKey = (): string => {
+  if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
+    return crypto.randomUUID();
+  }
+  return `mavi-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+};
 
 interface SettlementResponse extends ApiEnvelope<{ settlement: PublicSettlement }> {}
 interface SettlementsResponse extends ApiEnvelope<PaginatedResult<PublicSettlement>> {}

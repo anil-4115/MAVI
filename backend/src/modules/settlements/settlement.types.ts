@@ -10,6 +10,8 @@ export interface CreateSettlementInput {
   currency: string;
   date: Date;
   note?: string;
+  /** Client-owned correlation id; replaying the same key never duplicates. */
+  idempotencyKey: string;
 }
 
 /** Safe, serialized settlement. Never includes sensitive user fields. */

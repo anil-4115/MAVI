@@ -1,10 +1,10 @@
-import { useState, type FormEvent } from "react";
+import { useRef, useState, type FormEvent } from "react";
 import { Banner } from "../../../components/ui/Banner";
 import { formatMoney } from "../../../lib/money";
 import { getErrorMessage } from "../../../services/api";
 import type { SuggestedSettlement } from "../../balances/api/balancesApi";
 import { fromDateInputValue, minorToRupeesText, parseRupeesToMinor, todayDateInputValue } from "../../expenses/lib/input";
-import { createSettlement, type CreateSettlementPayload } from "../api/settlementsApi";
+import { createSettlement, newIdempotencyKey, type CreateSettlementPayload } from "../api/settlementsApi";
 
 interface ActiveMember {
   userId: string;
@@ -58,6 +58,10 @@ export function SettlementForm({
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
+  // One key per logical submission; it is reused on retry so a resend after a
+  // network blip never creates a duplicate. The form unmounts on success, and a
+  // freshly opened dialog starts with a new key.
+  const idempotencyKeyRef = useRef<string>(newIdempotencyKey());
 
   const memberLabel = (userId: string): string => {
     const member = members.find((entry) => entry.userId === userId);
@@ -109,6 +113,7 @@ export function SettlementForm({
       currency,
       date: dateIso,
       note: trimmedNote === "" ? undefined : trimmedNote,
+      idempotencyKey: idempotencyKeyRef.current,
     };
     setIsSaving(true);
     try {

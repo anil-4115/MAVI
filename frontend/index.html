@@ -6,6 +6,22 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="description" content="MAVI — split group expenses and track who owes whom." />
     <title>MAVI</title>
+    <script>
+      (function () {
+        var theme = "dark";
+        try {
+          var stored = window.localStorage.getItem("mavi-theme");
+          if (stored === "light" || stored === "dark" || stored === "blue") {
+            theme = stored;
+          } else if (stored === "system" || stored === null) {
+            theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+          }
+        } catch (e) {
+          theme = "dark";
+        }
+        document.documentElement.setAttribute("data-theme", theme);
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>

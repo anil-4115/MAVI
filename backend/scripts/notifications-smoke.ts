@@ -63,12 +63,14 @@ const latestNotification = async (userId: string, type?: NotificationType) => {
   return res.items[0];
 };
 
+let idempotencyCounter = 0;
 const settleInput = (payerId: string, receiverId: string, amountMinor: number) => ({
   payerId,
   receiverId,
   amountMinor,
   currency: "INR",
   date: new Date(),
+  idempotencyKey: `smoke-${++idempotencyCounter}-${Date.now()}`,
 });
 
 async function main(): Promise<void> {
