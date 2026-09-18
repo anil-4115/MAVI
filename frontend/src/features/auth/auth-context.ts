@@ -11,6 +11,8 @@ export interface AuthContextValue {
    *  account is NOT auto-authenticated — it must be email-verified first. */
   register: (payload: RegisterPayload) => Promise<string>;
   logout: () => void;
+  /** Replaces the in-memory session user (e.g. after a profile update). */
+  updateUser: (user: AuthUser) => void;
 }
 
 export const AuthContext: Context<AuthContextValue | undefined> = createContext<

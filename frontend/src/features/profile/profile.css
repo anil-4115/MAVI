@@ -71,7 +71,8 @@
 }
 
 .profile-settings,
-.profile-help {
+.profile-help,
+.profile-profile {
   display: flex;
   flex-direction: column;
   gap: var(--sp-4);

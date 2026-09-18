@@ -1,8 +1,13 @@
-import { useState } from "react";
+import { useState, type FormEvent } from "react";
 import { useSearchParams } from "react-router-dom";
 import { Avatar } from "../../components/ui/Avatar";
+import { Banner } from "../../components/ui/Banner";
+import { useToast } from "../../components/ui/Toast";
 import { formatDate } from "../../lib/format";
+import { getErrorMessage } from "../../services/api";
 import { useAuth } from "../auth/useAuth";
+import { validateName } from "../auth/validation";
+import { updateMyProfile } from "../users/api/usersApi";
 import { useTheme } from "../../theme/ThemeProvider";
 import type { ThemePreference } from "../../theme/ThemeProvider";
 import "./profile.css";
@@ -15,59 +20,155 @@ const TABS: { id: ProfileTab; label: string }[] = [
   { id: "help", label: "Help & Support" },
 ];
 
-const THEME_OPTIONS: { id: ThemePreference; label: string }[] = [
-  { id: "blue", label: "Blue + White" },
-  { id: "light", label: "Light" },
-  { id: "dark", label: "Dark" },
-  { id: "system", label: "System" },
+const THEME_OPTIONS: { id: ThemePreference; label: string; description: string }[] = [
+  { id: "blue", label: "Blue + White", description: "MAVI's default look." },
+  { id: "light", label: "Light", description: "Bright, high contrast." },
+  { id: "dark", label: "Dark", description: "Easy on the eyes at night." },
+  { id: "system", label: "System", description: "Follows this device's setting." },
 ];
 
+const RESOLVED_THEME_LABELS: Record<string, string> = {
+  blue: "Blue + White",
+  light: "Light",
+  dark: "Dark",
+};
+
 function ProfileInfo() {
-  const { user } = useAuth();
+  const { user, updateUser } = useAuth();
+  const { addToast } = useToast();
+  const [draftName, setDraftName] = useState(user?.name ?? "");
+  const [fieldErrors, setFieldErrors] = useState<{ name?: string | null }>({});
+  const [formError, setFormError] = useState<string | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
+
   if (!user) {
     return null;
   }
+
+  const isDirty = draftName.trim() !== user.name;
+
+  const handleSubmit = async (event: FormEvent) => {
+    event.preventDefault();
+
+    const nameError = validateName(draftName);
+    setFieldErrors({ name: nameError });
+    setFormError(null);
+    if (nameError) {
+      return;
+    }
+
+    setIsSaving(true);
+    try {
+      const updated = await updateMyProfile({ name: draftName.trim() });
+      updateUser(updated);
+      setDraftName(updated.name);
+      addToast("Profile updated.", "success");
+    } catch (error) {
+      setFormError(getErrorMessage(error));
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const resetDraft = () => {
+    setDraftName(user.name);
+    setFieldErrors({});
+    setFormError(null);
+  };
+
   return (
-    <section className="card profile-card">
-      <div className="profile-card__identity">
-        <Avatar name={user.name} size="lg" />
-        <div>
-          <h2 className="profile-card__name">{user.name}</h2>
-          <p className="profile-card__email">{user.email}</p>
-          <p className="profile-card__meta">Joined {formatDate(user.createdAt)}</p>
+    <div className="profile-profile">
+      <section className="card profile-card">
+        <div className="profile-card__identity">
+          <Avatar name={user.name} size="lg" />
+          <div>
+            <h2 className="profile-card__name">{user.name}</h2>
+            <p className="profile-card__email">{user.email}</p>
+            <p className="profile-card__meta">Joined {formatDate(user.createdAt)}</p>
+          </div>
         </div>
-      </div>
-      <dl className="profile-card__details">
-        <div>
-          <dt>Account status</dt>
-          <dd>
-            <span className="badge badge--success">Active</span>
-          </dd>
-        </div>
-        <div>
-          <dt>Member since</dt>
-          <dd>{formatDate(user.createdAt)}</dd>
-        </div>
-      </dl>
-    </section>
+        <dl className="profile-card__details">
+          <div>
+            <dt>Account status</dt>
+            <dd>
+              <span className="badge badge--success">Active</span>
+            </dd>
+          </div>
+          <div>
+            <dt>Member since</dt>
+            <dd>{formatDate(user.createdAt)}</dd>
+          </div>
+        </dl>
+      </section>
+
+      <section className="card">
+        <h3 className="card__title">Edit profile</h3>
+        <p className="form-hint">Your name is shown to the people you split expenses with.</p>
+
+        {formError && (
+          <Banner tone="error">{formError}</Banner>
+        )}
+
+        <form className="form" onSubmit={handleSubmit} noValidate>
+          <div className={`field${fieldErrors.name ? " field--invalid" : ""}`}>
+            <label htmlFor="profile-name">Full name</label>
+            <input
+              id="profile-name"
+              type="text"
+              value={draftName}
+              onChange={(e) => setDraftName(e.target.value)}
+              placeholder="Jane Doe"
+              autoComplete="name"
+              maxLength={100}
+              aria-invalid={Boolean(fieldErrors.name)}
+              aria-describedby={fieldErrors.name ? "profile-name-error" : undefined}
+            />
+            {fieldErrors.name && (
+              <span id="profile-name-error" className="field__error">
+                {fieldErrors.name}
+              </span>
+            )}
+          </div>
+
+          <div className="field">
+            <label htmlFor="profile-email">Email</label>
+            <input id="profile-email" type="email" value={user.email} disabled readOnly />
+            <p className="form-hint">Email is read-only — it is your sign-in identifier.</p>
+          </div>
+
+          <div className="form__actions">
+            <button className="btn" type="submit" disabled={isSaving}>
+              {isSaving ? "Saving…" : "Save changes"}
+            </button>
+            {isDirty && !isSaving && (
+              <button className="btn btn--secondary" type="button" onClick={resetDraft}>
+                Cancel
+              </button>
+            )}
+          </div>
+        </form>
+      </section>
+    </div>
   );
 }
 
 function SettingsTab() {
-  const { preference, setPreference } = useTheme();
+  const { preference, resolvedTheme, setPreference } = useTheme();
+  const resolvedLabel = RESOLVED_THEME_LABELS[resolvedTheme] ?? resolvedTheme;
 
   return (
     <div className="profile-settings">
       <section className="card">
         <h3 className="card__title">Appearance</h3>
-        <p className="form-hint">Choose how MAVI looks on this device.</p>
-        <div className="segmented" role="radiogroup" aria-label="Theme">
+        <p className="form-hint">Choose how MAVI looks on this device. Your choice is remembered locally.</p>
+        <div className="segmented" role="radiogroup" aria-label="Theme" aria-describedby="theme-current">
           {THEME_OPTIONS.map((option) => (
             <button
               key={option.id}
               type="button"
               role="radio"
               aria-checked={preference === option.id}
+              title={option.description}
               className={`segmented__option${preference === option.id ? " segmented__option--active" : ""}`}
               onClick={() => setPreference(option.id)}
             >
@@ -75,12 +176,16 @@ function SettingsTab() {
             </button>
           ))}
         </div>
+        <p id="theme-current" className="form-hint" role="status">
+          Currently showing <strong>{resolvedLabel}</strong>
+          {preference === "system" ? " (matching your device)." : "."}
+        </p>
       </section>
 
       <section className="card">
         <h3 className="card__title">Account</h3>
         <p className="form-hint">
-          Email and password changes are managed through your account on the current build.
+          Your email and password belong to your sign-in. Changing them isn't available in this build.
         </p>
         <p className="form-hint">Notifications live in the Activity feed and update automatically.</p>
       </section>
